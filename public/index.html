@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<body>
+<svg viewBox="0 0 500 130" id="chart">
+
+    <polyline
+    fill="none"
+    stroke="#999"
+    stroke-width="1"
+    points="00,50
+    20,60
+    40,80
+    60,20"
+  />
+  <polyline
+     fill="none"
+     stroke="#0074d9"
+     stroke-width="1"
+     points="00,120
+     20,60
+     40,80
+     60,20"
+   />
+
+</svg>
+
+<script>
+let pl = document.querySelector("#chart polyline")
+pl.setAttribute('points', `
+       00,120
+       20,60
+       40,80
+       60,20
+       80,80
+       100,80
+       120,60
+       140,100
+       160,90
+       180,80
+       200, 110
+       220, 10
+       240, 70
+       260, 100
+       280, 100
+       300, 40
+       320, 0
+       340, 100
+       360, 100
+       380, 120
+       400, 60
+       420, 70
+       440, 80
+`)
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+runtime: python310
+
+- url: /
+  static_files: public/index.html
+  upload: public/index.html
+
+entrypoint: gunicorn -c gunicorn.py -b :$PORT main:app
