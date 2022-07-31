@@ -1,56 +1,422 @@
 <!DOCTYPE html>
 <html>
+<head>
+<title>台灣水庫水情歷年統計</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=1">
+<style>
+:root{
+  --bg-color: #eee;
+  --thisyear-color: rgb(202, 158, 46);
+  --year-color: rgb(0,160,240);
+  --grid-color: rgb(32,32,32);
+  font-size: 16px;
+  background-color: var(--bg-color);
+  font-family: Arial, Helvetica, sans-serif;
+}
+html,body{
+  padding:0px;
+  margin:0px;
+}
+
+header{
+  padding:1em 1em 3em;
+  background:
+    radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent),
+    radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent) 0 -50px;
+  background-color: #48b;
+  background-size:75px 100px;
+  text-align: center;
+  color:#ddd;
+  border-bottom: 4px dashed #eee;
+}
+header h1{
+  font-size: 60px;
+}
+header a, header a:visited{
+  display: inline-block;
+  color:#fff;
+  background-color: var(--thisyear-color);
+  padding:10px 1em;
+  border-radius: 4px;
+  margin: 2px 1em;
+}
+
+#main{
+  padding:0 1em;
+}
+
+a:link, a:visited{
+  color:#333;
+  text-decoration: none;
+}
+
+a .link_symbol{
+  opacity: 0;
+  font-size: 90%;
+}
+
+a:hover .link_symbol{
+  opacity: 1;
+}
+
+svg.reservoir polyline{
+  transition: all 0.17s;
+  stroke:var(--grid-color);
+  stroke-width: 0.6;
+  fill: none;
+  stroke-linejoin:round;
+  stroke-linecap: round;
+}
+svg.reservoir polyline.thisyear{
+  stroke: var(--thisyear-color);
+  stroke-width: 2;
+  opacity: 1;
+}
+svg.reservoir polyline.over{
+  opacity: 1;
+  stroke: var(--year-color);
+  stroke-width: 2;
+}
+svg.reservoir polyline.grid, svg.reservoir line.grid {
+  fill: none;
+  stroke: var(--grid-color);
+  stroke-width: 2;
+}
+svg.reservoir text{
+  font-size: 12px;
+  fill: var(--grid-color);
+  text-anchor: middle;
+}
+svg.reservoir text.grid {
+  text-anchor:start;
+  vertical-align: text-top;
+  stroke: var(--bg-color);
+  stroke-width: 2px;
+  paint-order: stroke;
+}
+svg.reservoir text.year_text, svg.reservoir text.thisyear_text {
+  text-anchor:end;
+  font-size: 15px;
+  vertical-align: text-top;
+  stroke: var(--bg-color);
+  stroke-width: 4px;
+  paint-order: stroke;
+  fill: var(--year-color);
+}
+svg.reservoir text.thisyear_text {
+  text-anchor:start;
+  fill:var(--thisyear-color);
+}
+svg.reservoir .endpoint{
+  fill:var(--thisyear-color);
+}
+
+div.reservoirs{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap:15px;
+}
+
+h3{
+  display:inline;
+}
+.desc{
+  color: #666;
+  font-size: 14px;
+}
+.desc em{
+  font-style: normal;
+  color: var(--thisyear-color);
+  font-size:16px;
+}
+
+footer{
+  margin-top: 50px;
+  padding:100px 1em 40px;
+  color:#aaa;
+  background-color: #e6e6e6;
+  font-size:14px;
+  text-align: center;
+}
+footer a,footer a:visited{
+  color:#666;
+  text-decoration: underline;
+}
+footer del{
+  opacity: 0.4;
+}
+
+@media (max-width: 800px) {
+  div.reservoirs{
+    grid-template-columns: 1fr
+  }
+}
+</style>
+</head>
 <body>
-<svg viewBox="0 0 500 130" id="chart">
 
-    <polyline
-    fill="none"
-    stroke="#999"
-    stroke-width="1"
-    points="00,50
-    20,60
-    40,80
-    60,20"
-  />
-  <polyline
-     fill="none"
-     stroke="#0074d9"
-     stroke-width="1"
-     points="00,120
-     20,60
-     40,80
-     60,20"
-   />
+<header>
+<h1>台灣水庫水情歷年統計</h1>
+<nav>
+  <a href="#北部">北部</a>
+  <a href="#中部">中部</a>
+  <a href="#南部">南部</a>
+</nav>
+</header>
+<div id="main_wrapper">
+<div id="main">
+載入中...
+</div>
+</div>
 
-</svg>
-
+<footer>
+資料來源：經濟部水利署<br>
+<br>
+<del>抄襲</del>參考了<a href="https://web.cw.com.tw/drought-2021/index.html">天下雜誌 2021 水情專題</a>的圖表<br>
+他們不更新資料了，其他人沒做歷史紀錄，只好自己做一份。<br>
+天下雜誌與本站並無關聯。<br>
+</footer>
 <script>
-let pl = document.querySelector("#chart polyline")
-pl.setAttribute('points', `
-       00,120
-       20,60
-       40,80
-       60,20
-       80,80
-       100,80
-       120,60
-       140,100
-       160,90
-       180,80
-       200, 110
-       220, 10
-       240, 70
-       260, 100
-       280, 100
-       300, 40
-       320, 0
-       340, 100
-       360, 100
-       380, 120
-       400, 60
-       420, 70
-       440, 80
-`)
+function lineOver(e) {
+  let year = e.target.dataset['year']
+  if (e.target.classList.contains('thisyear')) {
+    year = ''
+  }
+
+  highlight_year(year)
+}
+
+function highlight_year(year){
+  document.querySelectorAll(`svg.reservoir .year_text`).forEach(ele => {
+    ele.textContent = year
+  })
+
+  document.querySelectorAll('polyline.over').forEach(ele => {
+    ele.classList.remove('over')
+  })
+
+  document.querySelectorAll(`polyline.year-${year}`).forEach(ele => {
+    ele.classList.add('over')
+  })
+}
+
+function percentageChart(data, max) {
+  let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const width = 500
+  const height = 180
+  const chart_top = 6
+  const chart_bottom = height - 16
+
+  const thisyear = new Date().getFullYear()
+
+  svg.classList.add('reservoir')
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
+
+  const endpoint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  endpoint.classList.add('endpoint')
+  endpoint.setAttribute('r', 3)
+
+  const entries = Object.entries(data)
+  for (const [year, dates] of entries) {
+    let line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    if (year == thisyear) {
+      line.classList.add('thisyear')
+    }
+
+    line.classList.add(`year-${year}`)
+    line.dataset['year'] = year
+    line.setAttribute("opacity", 0.25)
+    line.addEventListener("mouseover", lineOver)
+
+    let points = []
+    let year_day = 366
+
+    const year_start = new Date(year, 1, 1)
+    for (const [ymd, amount] of Object.entries(dates)) {
+      const percentage = Math.min(amount / max, 1)
+      const [yy, mm, dd] = ymd.split('-')
+      const dt = new Date(yy, mm, dd)
+      const diff = dt - year_start
+      const day_of_year = Math.floor(diff / (86400 * 1000))
+
+      const x = width * day_of_year / year_day
+      const y = chart_top + (1 - Math.min(percentage, 1)) * (chart_bottom - chart_top)
+      points.push(`${x},${y}`)
+      endpoint.setAttribute('cx', x)
+      endpoint.setAttribute('cy', y)
+    }
+    line.setAttribute('points', points.join(" "))
+    svg.append(line)
+  }
+
+  svg.append(endpoint)
+
+  const year_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  year_text.classList.add('year_text')
+  year_text.setAttribute("x", width - 10)
+  year_text.setAttribute("y", chart_bottom - 10)
+  year_text.textContent = ""
+  svg.append(year_text)
+
+  const thisyear_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  thisyear_text.classList.add('thisyear_text')
+  thisyear_text.setAttribute("x", 10)
+  thisyear_text.setAttribute("y", chart_bottom - 10)
+  thisyear_text.textContent = thisyear
+  svg.append(thisyear_text)
+
+  // grid
+  const grid_points = [
+    [5, chart_top],
+    [0, chart_top],
+    [0, chart_bottom],
+    [width, chart_bottom],
+    [width, chart_top],
+    [width - 5, chart_top],
+  ].map((ele) => {
+    return [
+      ele[0] > (width/2) ? ele[0] - 1 : ele[0] + 1,
+      ele[1] > (height/2) ? ele[1] - 1 : ele[1] + 1,
+    ]
+  })
+
+  const grid_line = document.createElementNS("http://www.w3.org/2000/svg", "polyline")
+  grid_line.setAttribute('points', grid_points.join(" "))
+  grid_line.classList.add('grid')
+  svg.append(grid_line)
+
+  let max_text = document.createElementNS("http://www.w3.org/2000/svg", "text")
+  max_text.setAttribute("x", 10)
+  max_text.setAttribute("y", 10)
+  max_text.textContent = `${max.toLocaleString('en-US')} 萬立方公尺`
+  max_text.classList.add('grid')
+  svg.append(max_text);
+
+
+  // month annotation
+  [
+    [31, '二月'],
+    [90, '四月'],
+    [151, '六月'],
+    [212, '八月'],
+    [273, '十月'],
+    [334, '十二月'],
+  ].forEach(p => {
+    const [day, name] = p
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text")
+    const x = width * day / 365
+    text.setAttribute("x", x)
+    text.setAttribute("y", height - 4)
+    text.textContent = name
+    svg.append(text)
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line")
+    line.setAttribute("x1", x)
+    line.setAttribute("y1", chart_bottom - 5)
+    line.setAttribute("x2", x)
+    line.setAttribute("y2", chart_bottom)
+    line.classList.add("grid")
+    svg.append(line)
+  });
+
+  return svg
+}
+
+function redraw() {
+  const reservoir_group = {
+    "北部": ["翡翠水庫", "石門水庫", "寶山第二水庫", "新山水庫", "大埔水庫", "寶山水庫", "西勢水庫"],
+    "中部": ["德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"],
+    "南部": ["曾文水庫", "南化水庫", "烏山頭水庫", "牡丹水庫", "仁義潭水庫", "阿公店水庫", "白河水庫", "蘭潭水庫", "鳳山水庫", "澄清湖水庫", "鏡面水庫"],
+  }
+
+  const main = document.createElement('div')
+
+  for (const [group_name, reservoir_names] of Object.entries(reservoir_group)) {
+    const group_title = document.createElement("h2")
+    group_title.textContent = group_name
+
+    const anchor = document.createElement("a")
+    anchor.setAttribute('name', group_name)
+
+    const reservoirs = document.createElement("div")
+    reservoirs.classList.add('reservoirs')
+
+    for (const name of reservoir_names) {
+      const data = reservoir_history[name];
+      if (!data) {
+        continue
+      }
+
+      const content = document.createElement("div")
+
+      const anchor = document.createElement("a")
+      anchor.setAttribute('name', name)
+      content.append(anchor)
+
+      const self_link = document.createElement("a")
+      self_link.setAttribute('href', `#${name}`)
+      self_link.textContent = name
+
+      const link_symbol = document.createElement("span")
+      link_symbol.classList.add('link_symbol')
+      link_symbol.textContent = '🔗'
+      self_link.append(link_symbol)
+
+      const title = document.createElement("h3")
+      title.append(self_link)
+      content.append(title)
+
+      const percentage = (reservoir_current[name] / reservoir_max[name]) * 100
+      const desc = document.createElement("span")
+      desc.classList.add('desc')
+      desc.innerHTML = `（目前蓄水量 <em>${percentage.toPrecision(3)}%</em>）`
+      content.append(desc)
+
+      content.append(percentageChart(data, reservoir_max[name]))
+      reservoirs.append(content)
+    }
+
+    main.append(anchor)
+    main.append(group_title)
+    main.append(reservoirs)
+  }
+
+  document.getElementById('main').remove()
+  main.setAttribute('id', 'main')
+  document.getElementById('main_wrapper').append(main)
+}
+
+</script>
+<script>
+let reservoir_history = {}
+let reservoir_current = {}
+let reservoir_max = {}
+
+fetch('/api/reservoir-history.tsv')
+.then(response => response.text())
+.then(tsv => {
+  tsv.split("\n")
+  .forEach(line => {
+    if (!line) return;
+    let [reservoir, max, current, ymd] = line.split("\t")
+    let year = ymd.split('-')[0]
+
+    reservoir_history[reservoir] = reservoir_history[reservoir] || {}
+    reservoir_history[reservoir][year] = reservoir_history[reservoir][year] || {}
+    reservoir_history[reservoir][year][ymd] = current
+
+    reservoir_max[reservoir] = Math.max(max, reservoir_max[reservoir] || 0)
+    reservoir_current[reservoir] = current
+  })
+})
+.then(() => {
+  redraw()
+  if (window.location.hash) {
+    window.location = window.location
+  }
+})
+
+document.body.addEventListener('click', () => highlight_year(''))
 </script>
 </body>
 </html>
