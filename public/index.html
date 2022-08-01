@@ -322,7 +322,10 @@ function percentageChart(data, max) {
     let year_day = 366
 
     const year_start = new Date(year, 1, 1)
-    for (const [ymd, amount] of Object.entries(dates)) {
+    let last_amount = 0
+    for (let [ymd, amount] of Object.entries(dates)) {
+      amount = (amount <= 0) ? last_amount : amount
+
       const percentage = Math.min(amount / max, 1)
       const [yy, mm, dd] = ymd.split('-')
       const dt = new Date(yy, mm, dd)
@@ -334,6 +337,8 @@ function percentageChart(data, max) {
       points.push(`${x},${y}`)
       endpoint.setAttribute('cx', x)
       endpoint.setAttribute('cy', y)
+
+      last_amount = amount
     }
     line.setAttribute('points', points.join(" "))
     svg.append(line)
