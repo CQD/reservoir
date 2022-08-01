@@ -23,10 +23,6 @@ class ReservoirCrawler:
     url = 'https://fhy.wra.gov.tw/ReservoirPage_2011/StorageCapacity.aspx'
     form_inputs: Dict[str, str] = {}
 
-    def __init__(self) -> None:
-        self.fetch_page()
-
-
     def fetch_page(self, payload: Optional[dict]=None):
         if payload is None:
             payload = {}
@@ -54,6 +50,10 @@ class ReservoirCrawler:
 
 
     def fetch(self, date: datetime=datetime.now()):
+        # init form data
+        if not self.form_inputs:
+            self.fetch_page()
+
         payload = {
             'ctl00$cphMain$ucDate$cboYear': str(date.year),
             'ctl00$cphMain$ucDate$cboMonth': str(date.month),
@@ -85,6 +85,9 @@ class ReservoirCrawler:
 
             capacity = floater(tds[1])
             current = floater(tds[9])
+            if capacity <=0 and current <= 0:
+                continue
+
             result[name] = (capacity, current)
 
         return result
