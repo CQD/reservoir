@@ -334,8 +334,12 @@ function highlight_year(year){
 }
 
 function groupChart(group_name, group_data) {
+  const g_height = 180
+  const g_width = 140
+  const g_radius = 70
+
   const width = window.innerWidth > 700 ? 1400 : 700
-  const height = window.innerWidth > 700 ? 360 : 720
+  const height = window.innerWidth > 700 ? 360 : (Math.ceil(group_data.length / 4) + 1) * g_height
 
   const group_radius = 130
   const item_radius = 80
@@ -349,10 +353,6 @@ function groupChart(group_name, group_data) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.classList.add('group')
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
-
-  const g_height = 180
-  const g_width = 140
-  const g_radius = 70
 
   function makeG(name, size, fill_rate) {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
