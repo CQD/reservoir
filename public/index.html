@@ -501,7 +501,9 @@ fetch('/api/reservoir-history.tsv')
     reservoir_history[reservoir][year][ymd] = current
 
     reservoir_max[reservoir] = Math.max(max, reservoir_max[reservoir] || 0)
-    reservoir_current[reservoir] = current
+    if (current > 0) {
+      reservoir_current[reservoir] = current
+    }
   })
 })
 .then(() => {
