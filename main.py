@@ -19,6 +19,11 @@ def index():
     return FileResponse('public/index.html')
 
 
+@app.get("/favicon.png")
+def index():
+    return FileResponse('public/favicon.png')
+
+
 @app.get("/api/reservoir-history.tsv")
 def reservoir_history():
     last_date = TSV_CONTENT[-11:-1]

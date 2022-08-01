@@ -5,4 +5,8 @@ handlers:
   static_files: public/index.html
   upload: public/index.html
 
+- url: /favicon.png
+  static_files: public/favicon.png
+  upload: public/favicon.png
+
 entrypoint: gunicorn -c gunicorn.py -b :$PORT main:app
