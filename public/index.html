@@ -338,8 +338,8 @@ function groupChart(group_name, group_data) {
   const g_width = 140
   const g_radius = 70
 
-  const width = window.innerWidth > 700 ? 1400 : 700
-  const height = window.innerWidth > 700 ? 360 : (Math.ceil(group_data.length / 4) + 1) * g_height
+  const width = window.innerWidth > 800 ? 1400 : 700
+  const height = window.innerWidth > 800 ? 360 : (Math.ceil(group_data.length / 4) + 1) * g_height
 
   const group_radius = 130
   const item_radius = 80
@@ -643,6 +643,15 @@ fetch('/api/reservoir-history.tsv')
 })
 
 document.body.addEventListener('click', () => highlight_year(''))
+
+let mobile_mode = window.innerWidth <= 800
+window.addEventListener('resize', (e) => {
+  let new_mobile_mode = window.innerWidth <= 800
+  if (new_mobile_mode != mobile_mode) {
+    redraw()
+    mobile_mode = new_mobile_mode
+  }
+})
 </script>
 </body>
 </html>
