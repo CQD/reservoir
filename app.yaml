@@ -1,5 +1,6 @@
 runtime: python310
 
+handlers:
 - url: /
   static_files: public/index.html
   upload: public/index.html
