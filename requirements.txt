@@ -1,3 +1,5 @@
-gunicorn
-uvicorn
-fastapi
+gunicorn>=20.1.0
+uvicorn>=0.18.2
+fastapi>=0.79.0
+requests>=2.28.1
+pyquery>=1.4.3
