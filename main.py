@@ -5,7 +5,6 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from starlette.responses import FileResponse, PlainTextResponse
-import requests
 
 from app.data import ReservoirCrawler
 
