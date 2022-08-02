@@ -349,8 +349,6 @@ function groupChart(group_name, group_data) {
   const total_amount = group_data.reduce((prev, ele) => prev + ele.amount, 0)
   const max_max = group_data.reduce((prev, ele) => Math.max(ele.max, prev), 0)
 
-  console.log(total_max, total_amount, max_max)
-
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.classList.add('group')
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
