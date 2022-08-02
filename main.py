@@ -53,7 +53,7 @@ def fetch_new_data(last_date:str) -> str:
     crawer = ReservoirCrawler()
     for y in range(last_dt.year, today.year + 1):
         for m in range(1, 13):
-            for d in (1, 15, 22):
+            for d in (1, 8, 15, 22):
                 cursor_dt = date(y, m, d)
                 cursor_dt_str = cursor_dt.strftime('%Y-%m-%d')
 

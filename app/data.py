@@ -102,7 +102,8 @@ if __name__ == '__main__':
         for name, (max, curr) in rslt.items():
             print(f"{name}\t{max}\t{curr}\t{dt_str}")
 
-    go(2022,4,22)
     for m in [5,6,7]:
-        for d in [1,15,22]:
+        for d in [1,8,15,22]:
             go(2022,m,d)
+
+    go(2022,8,1)
