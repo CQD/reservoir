@@ -1,5 +1,5 @@
 from datetime import date
-from logging import Logger
+from logging import Logger, basicConfig, INFO
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -7,6 +7,7 @@ from starlette.responses import FileResponse, PlainTextResponse
 
 from app.data import ReservoirCrawler
 
+basicConfig(level=INFO)
 logger = Logger(__name__)
 app = FastAPI()
 
@@ -53,9 +54,10 @@ def fetch_new_data(last_date:str) -> str:
                 if cursor_dt >= today:
                     break
 
+                logger.info("嘗試撈取 %s 的資料", cursor_dt)
                 lines = [f"{name}\t{max}\t{curr}\t{cursor_dt_str}\n"
                          for name, (max, curr) in crawer.fetch(cursor_dt).items()]
-                logger.info("撈取 %s 的 %d 筆資料", cursor_dt, len(lines))
+                logger.info("已撈取 %s 的 %d 筆資料", cursor_dt, len(lines))
 
                 RESERVOIR_DATA[cursor_dt_str] = "".join(lines)
 
