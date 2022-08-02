@@ -21,17 +21,17 @@ TSV_CONTENT = Path('public/reservoir-history.tsv').read_text()
 
 
 @app.get("/")
-def index():
+async def index():
     return FileResponse('public/index.html')
 
 
 @app.get("/favicon.png")
-def index():
+async def favicon():
     return FileResponse('public/favicon.png')
 
 
 @app.get("/api/reservoir-history.tsv")
-def reservoir_history():
+async def reservoir_history():
     last_date = TSV_CONTENT[-11:-1]
     thread_pool.submit(fetch_new_data, last_date)
 
