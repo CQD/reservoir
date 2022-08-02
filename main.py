@@ -4,6 +4,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from starlette.responses import FileResponse, PlainTextResponse
+import requests
 
 from app.data import ReservoirCrawler
 
@@ -14,6 +15,30 @@ app = FastAPI()
 # RESERVOIR_DATA[date] = {tsv string, with line break at end}
 RESERVOIR_DATA = {}
 TSV_CONTENT = Path('public/reservoir-history.tsv').read_text()
+
+
+@app.get("/debug")
+def index():
+    urls = [
+        'https://example.com',
+        'https://www.kkbox.com',
+        'http://www.ey.gov.tw',
+        'https://www.ey.gov.tw',
+        'http://fhy.wra.gov.tw',
+        'https://fhy.wra.gov.tw',
+    ]
+
+    for url in urls:
+        logger.warning("GET %s", url)
+        resp = requests.get(url)
+        logger.warning("Done GET, status=%s", resp.status_code)
+
+        logger.warning("POST %s", url)
+        resp = requests.post(url)
+        logger.warning("Done POST, status=%s", resp.status_code)
+
+    return {"result":"ok"}
+
 
 @app.get("/")
 def index():
