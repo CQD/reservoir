@@ -29,6 +29,11 @@ async def favicon():
     return FileResponse('public/favicon.png')
 
 
+@app.get("/robots.txt")
+async def robots():
+    return FileResponse('public/robots.txt')
+
+
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
     last_date = TSV_CONTENT[-11:-1]
