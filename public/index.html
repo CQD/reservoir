@@ -624,6 +624,12 @@ fetch('/api/reservoir-history.tsv')
     let [reservoir, max, current, ymd] = line.split("\t")
     let year = ymd.split('-')[0]
 
+    // 做一筆假資料，讓 {year}-12-22 在圖上會連到 {year+1}-01-01
+    if (`${year}-01-01` == ymd && year > 2012) {
+      let prev_ymd = `${year-1}-12-31`
+      reservoir_history[reservoir][year-1][prev_ymd] = current
+    }
+
     reservoir_history[reservoir] = reservoir_history[reservoir] || {}
     reservoir_history[reservoir][year] = reservoir_history[reservoir][year] || {}
     reservoir_history[reservoir][year][ymd] = current
