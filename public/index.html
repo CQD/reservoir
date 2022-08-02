@@ -413,8 +413,8 @@ function groupChart(group_name, group_data) {
 
 function reservoirChart(data, max) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  const width = 500
-  const height = 180
+  const width = window.innerWidth > 800 ? 500 : 350
+  const height = window.innerWidth > 800 ? 180 : 140
   const chart_top = 6
   const chart_bottom = height - 16
 
