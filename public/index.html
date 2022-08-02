@@ -140,7 +140,6 @@ svg.group text.percent{
   fill: #fff;
   font-weight: bold;
   opacity: 0.9;
-  stroke: hsl(205.7, 50%, 50%);
   stroke-width: 5;
   paint-order: stroke;
 }
@@ -334,10 +333,23 @@ function highlight_year(year){
   })
 }
 
+function middleColor(c1, c2, pos) {
+  let color = [
+    c1[0] + pos * (c2[0] - c1[0]),
+    c1[1] + pos * (c2[1] - c1[1]),
+    c1[2] + pos * (c2[2] - c1[2]),
+  ]
+  return `rgba(${color.join(",")})`
+}
+
 function groupChart(group_name, group_data) {
   const g_height = 180
   const g_width = 140
   const g_radius = 70
+
+  const FULL_RGB = [0, 160, 240]
+  const HALF_RGB = [202, 158, 46]
+  const DRY_RGB  = [240, 60, 0]
 
   const width = window.innerWidth > 800 ? 1400 : 700
   const height = window.innerWidth > 800 ? 360 : (Math.ceil(group_data.length / 4) + 1) * g_height
@@ -358,6 +370,13 @@ function groupChart(group_name, group_data) {
 
     size = Math.pow(size, 0.5)
 
+    let color_str = 'rgba(0,160,240)'
+    if (fill_rate < 0.5) {
+      color_str = middleColor(DRY_RGB, HALF_RGB, (fill_rate) / 0.5)
+    } else if (fill_rate < 0.9) {
+      color_str = middleColor(HALF_RGB, FULL_RGB, (fill_rate - 0.5) / 0.4)
+    }
+
     const circle_outer = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     circle_outer.setAttribute('r', size * g_radius)
     circle_outer.setAttribute('cx', g_width / 2)
@@ -369,7 +388,7 @@ function groupChart(group_name, group_data) {
     circle_inner.setAttribute('r', size * g_radius * (Math.pow(fill_rate, 0.5)))
     circle_inner.setAttribute('cx', g_width / 2)
     circle_inner.setAttribute('cy', g_radius)
-    circle_inner.setAttribute('fill', 'hsl(205.7, 50%, 50%)')
+    circle_inner.setAttribute('fill', color_str)
     g.append(circle_inner)
 
     const name_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -382,6 +401,7 @@ function groupChart(group_name, group_data) {
     const percent_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     percent_text.textContent = `${(fill_rate*100).toPrecision(3)}%`
     percent_text.classList.add('percent')
+    percent_text.setAttribute('stroke', color_str)
     percent_text.setAttribute('x', g_width / 2)
     percent_text.setAttribute('y', (size > 0.35) ? g_radius : g_radius * 1.6)
     g.append(percent_text)
