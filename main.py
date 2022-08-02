@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from logging import Logger, basicConfig, INFO
 from pathlib import Path
@@ -11,6 +12,8 @@ from app.data import ReservoirCrawler
 basicConfig(level=INFO)
 logger = Logger(__name__)
 app = FastAPI()
+
+thread_pool = ThreadPoolExecutor(max_workers=1)
 
 # RESERVOIR_DATA[date] = {tsv string, with line break at end}
 RESERVOIR_DATA = {}
@@ -53,7 +56,7 @@ def index():
 @app.get("/api/reservoir-history.tsv")
 def reservoir_history():
     last_date = TSV_CONTENT[-11:-1]
-    fetch_new_data(last_date)
+    thread_pool.submit(fetch_new_data, last_date)
 
     return PlainTextResponse(TSV_CONTENT + "".join(RESERVOIR_DATA.values()))
 
