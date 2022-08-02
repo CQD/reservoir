@@ -62,11 +62,6 @@ def fetch_new_data(last_date:str) -> str:
                 RESERVOIR_DATA[cursor_dt_str] = "".join(lines)
 
 
-# init data
-fetch_new_data(TSV_CONTENT[-11:-1])
-logger.info("已預載 %d 天份新資料", len(RESERVOIR_DATA.values()))
-
-
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run("main:app", port=80, host='0.0.0.0', reload=True, log_level='debug')
