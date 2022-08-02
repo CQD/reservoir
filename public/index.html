@@ -179,6 +179,10 @@ footer a,footer a:visited{
 footer del{
   opacity: 0.4;
 }
+footer img{
+  width:32px;
+  border-radius: 100%;
+}
 
 #loading{
   text-align: center;
@@ -304,10 +308,20 @@ footer del{
 </div>
 
 <footer>
-資料來源：經濟部水利署<br>
-<br>
-<del>抄襲</del>參考了<a href="https://web.cw.com.tw/drought-2021/index.html">天下雜誌 2021 水情專題</a>的圖表<br>
-他們不更新資料了，其他人沒做歷史紀錄，只好自己做一份。
+<p>資料來源：經濟部水利署<a href="https://fhy.wra.gov.tw/fhyv2/monitor/reservoir">水庫蓄水統計表</a><br>
+資料時間：<span id="datatime">2022-08-01</span></p>
+
+<p><del>抄襲</del>參考了<a href="https://web.cw.com.tw/drought-2021/index.html">天下雜誌 2021 水情專題</a>的圖表<br>
+他們不更新資料了，其他人沒做歷史紀錄，只好自己做一份</p>
+
+<p>
+  <a href="https://cqd.tw"><img src="https://cqd.tw/avatar.png"></a>
+  &nbsp;
+  <a href="https://plurk.com/CQD"><img src="/plurk.svg"></a>
+  &nbsp;
+  <a href="https://github.com/CQD/reservoir/"><img src="/github.svg"></a>
+</p>
+
 </footer>
 <script>
 function lineOver(e) {
@@ -635,6 +649,8 @@ let reservoir_history = {}
 let reservoir_current = {}
 let reservoir_max = {}
 
+let datatime = '2022-08-01'
+
 fetch('/api/reservoir-history.tsv')
 .then(response => response.text())
 .then(tsv => {
@@ -643,6 +659,7 @@ fetch('/api/reservoir-history.tsv')
     if (!line) return;
     let [reservoir, max, current, ymd] = line.split("\t")
     let year = ymd.split('-')[0]
+    datatime = (datatime < ymd) ? ymd : datatime
 
     // 做一筆假資料，讓 {year}-12-22 在圖上會連到 {year+1}-01-01
     if (`${year}-01-01` == ymd && year > 2012) {
@@ -665,6 +682,7 @@ fetch('/api/reservoir-history.tsv')
   if (window.location.hash) {
     window.location = window.location
   }
+  document.getElementById('datatime').textContent = datatime
 })
 
 document.body.addEventListener('click', () => highlight_year(''))

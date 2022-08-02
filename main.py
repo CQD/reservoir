@@ -29,6 +29,16 @@ async def favicon():
     return FileResponse('public/favicon.png')
 
 
+@app.get("/github.svg")
+async def favicon():
+    return FileResponse('public/github.svg')
+
+
+@app.get("/plurk.svg")
+async def favicon():
+    return FileResponse('public/plurk.svg')
+
+
 @app.get("/robots.txt")
 async def robots():
     return FileResponse('public/robots.txt')
