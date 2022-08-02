@@ -34,7 +34,8 @@ async def reservoir_history():
     last_date = TSV_CONTENT[-11:-1]
     thread_pool.submit(fetch_new_data, last_date)
 
-    return PlainTextResponse(TSV_CONTENT + "".join(RESERVOIR_DATA.values()))
+    headers = {'Cache-Control': 'public, max-age=86400'}
+    return PlainTextResponse(TSV_CONTENT + "".join(RESERVOIR_DATA.values()), headers=headers)
 
 
 def fetch_new_data(last_date:str) -> str:
