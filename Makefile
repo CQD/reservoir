@@ -1,4 +1,4 @@
-IMAGE_NAME=cqd-water
+IMAGE_NAME=tw-reservoir
 CONTAINER_NAME=tw-reservoir
 
 OPTIONS:=
