@@ -32,13 +32,13 @@ header{
   border-bottom: 4px dashed #eee;
 }
 header h1{
-  font-size: 60px;
+  font-size: 40px;
 }
 header a:link, header a:visited{
   display: inline-block;
   color:#fff;
   background-color: var(--thisyear-color);
-  padding:10px 1em;
+  padding:5px 1em;
   border-radius: 4px;
   margin: 2px 1em;
 }
@@ -124,8 +124,11 @@ svg .endpoint{
   fill:var(--thisyear-color);
 }
 
+svg.group{
+  margin-bottom: 20px;
+}
 svg.group text.name{
-  font-size: 16px;
+  font-size: 18px;
   text-anchor:middle;
   dominant-baseline: bottom;
   fill: var(--grid-color);
@@ -283,7 +286,7 @@ footer img{
     grid-template-columns: 1fr
   }
   svg.group text.name{
-    font-size:26px;
+    font-size:24px;
   }
 }
 </style>
@@ -357,16 +360,17 @@ function middleColor(c1, c2, pos) {
 }
 
 function groupChart(group_name, group_data) {
-  const g_height = 180
+  const g_height = 150
   const g_width = 140
-  const g_radius = 70
+  const g_radius = 60
+  const g_gap = 20
 
   const FULL_RGB = [0, 160, 240]
   const HALF_RGB = [202, 158, 46]
   const DRY_RGB  = [240, 60, 0]
 
-  const width = window.innerWidth > 800 ? 1400 : 700
-  const height = window.innerWidth > 800 ? 360 : (Math.ceil(group_data.length / 4) + 1) * g_height
+  const width = (window.innerWidth > 800) ? (g_width * 8 + g_gap * 7 + 10) : (g_width * 4 + g_gap * 3 + 10)
+  const height = (window.innerWidth > 800) ? (g_height * 2) : (Math.ceil(group_data.length / 4) + 1) * g_height
 
   const group_radius = 130
   const item_radius = 80
@@ -427,14 +431,14 @@ function groupChart(group_name, group_data) {
   g.setAttribute('transform', 'scale(2)')
   svg.append(g)
 
-  const start_x = g_width * 2 + 40
+  const start_x = g_width * 2 + g_gap * 2
   let x = start_x
   let y = 0
   group_data.forEach(ele => {
     let g = makeG(ele.name, ele.max / max_max, ele.amount/ele.max)
     g.setAttribute('transform', `translate(${x}, ${y})`)
     svg.append(g)
-    x += g_width + 20
+    x += g_width + g_gap
     if (x + g_width > width) {
       y += g_height
       x = y >= (g_height * 2) ? 0 : start_x
