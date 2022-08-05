@@ -1,7 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, datetime, timedelta
 from logging import Logger, basicConfig, INFO
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI
 from starlette.responses import FileResponse, PlainTextResponse
@@ -56,12 +57,12 @@ async def reservoir_history():
 def fetch_new_data(last_date:str) -> str:
     global RESERVOIR_DATA
 
-    today = date.today()
+    yesterday = datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=1)
     yy, mm, dd = map(lambda val_str: int(val_str), last_date.split("-"))
     last_dt = date(yy, mm, dd)
 
     crawer = ReservoirCrawler()
-    for y in range(last_dt.year, today.year + 1):
+    for y in range(last_dt.year, yesterday.year + 1):
         for m in range(1, 13):
             for d in (1, 8, 15, 22):
                 cursor_dt = date(y, m, d)
@@ -71,7 +72,7 @@ def fetch_new_data(last_date:str) -> str:
                     continue
                 if cursor_dt <= last_dt:
                     continue
-                if cursor_dt >= today:
+                if cursor_dt >= yesterday:
                     break
 
                 logger.info("嘗試撈取 %s 的資料", cursor_dt)
