@@ -82,6 +82,16 @@ def fetch_new_data(last_date:str) -> str:
 
                 RESERVOIR_DATA[cursor_dt_str] = "".join(lines)
 
+    # 確保有新資料
+    yesterday_str = yesterday.strftime('%Y-%m-%d')
+    if last_date < yesterday_str and yesterday_str not in RESERVOIR_DATA:
+        logger.info("嘗試撈取 %s 的資料", yesterday)
+        lines = [f"{name}\t{max}\t{curr}\t{yesterday_str}\n"
+                    for name, (max, curr) in crawer.fetch(yesterday).items()]
+        RESERVOIR_DATA[yesterday_str] = "".join(lines)
+        logger.info("已撈取 %s 的 %d 筆資料", yesterday, len(lines))
+
+
 
 if __name__ == '__main__':
     import uvicorn
