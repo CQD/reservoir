@@ -50,7 +50,11 @@ async def reservoir_history():
     last_date = TSV_CONTENT[-11:-1]
     thread_pool.submit(fetch_new_data, last_date)
 
-    headers = {'Cache-Control': 'public, max-age=86400'}
+    yesterday = datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=1)
+    yesterday_str = yesterday.strftime('%Y-%m-%d')
+    cache_time = 86400 if yesterday_str in RESERVOIR_DATA else 600
+
+    headers = {'Cache-Control': f'public, max-age={cache_time}'}
     return PlainTextResponse(TSV_CONTENT + "".join(RESERVOIR_DATA.values()), headers=headers)
 
 
