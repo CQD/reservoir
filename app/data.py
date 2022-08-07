@@ -24,6 +24,8 @@ class ReservoirCrawler:
     form_inputs: Dict[str, str] = {}
 
     def fetch_page(self, payload: Optional[dict]=None):
+        logger.warning("開始撈取資料，payload 為：%s", payload)
+
         if payload is None:
             payload = {}
 
@@ -46,6 +48,7 @@ class ReservoirCrawler:
         hf_query = parse_qs(hf_url.query)
         self.form_inputs['ctl00_ctl02_HiddenField'] = hf_query['_TSM_CombinedScripts_'][0]
 
+        logger.warning("成功撈取資料")
         return document
 
 
