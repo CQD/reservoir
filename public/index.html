@@ -645,6 +645,14 @@ function redraw() {
   document.getElementById('main').remove()
   main.setAttribute('id', 'main')
   document.getElementById('main_wrapper').append(main)
+
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+   anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const name = this.getAttribute('href').replace('#', '')
+      document.querySelector(`a[name="${name}"]`).scrollIntoView({behavior: 'smooth'});
+    });
+  });
 }
 
 </script>
