@@ -1,0 +1,4 @@
+cron:
+- description: "確保預熱資料"
+  url: /api/reservoir-history.tsv
+  schedule: every 10 minutes
