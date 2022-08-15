@@ -2,7 +2,7 @@
 <html lang="zh-hant">
 <head>
 <meta charset="utf-8">
-<title>台灣水庫水情歷年統計</title>
+<title>台灣水庫水情即時統計</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=1">
 <link rel="icon" type="image/png" href="favicon.png" >
 <style>
@@ -33,6 +33,8 @@ header{
 }
 header h1{
   font-size: 40px;
+  margin-bottom:0px;
+  padding-bottom:0px;
 }
 header a:link, header a:visited{
   display: inline-block;
@@ -294,7 +296,8 @@ footer img{
 <body>
 
 <header>
-<h1>台灣水庫水情歷年統計</h1>
+<h1>台灣水庫水情即時統計</h1>
+<p id="desc">2012-01-01 至今台灣北中南區各大水庫的蓄水量統計。</p>
 <nav>
   <a href="#北部">北部</a>
   <a href="#中部">中部</a>
@@ -695,6 +698,9 @@ fetch('/api/reservoir-history.tsv')
     window.location = window.location
   }
   document.getElementById('datatime').textContent = datatime
+
+  const desc = document.getElementById('desc')
+  desc.textContent = desc.textContent.replace('2012-01-01 至今', `2012-01-01 至 ${datatime} `)
 })
 
 document.body.addEventListener('click', () => highlight_year(''))
