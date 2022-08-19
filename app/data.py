@@ -1,8 +1,10 @@
+import os
 from urllib.parse import urlparse, parse_qs
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import logging
 from typing import Dict, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 from lxml.html import HtmlElement
 from pyquery import PyQuery as pq
@@ -96,17 +98,43 @@ class ReservoirCrawler:
         return result
 
 
+    def fetch_uppdated_as_tsv(self, last_date: datetime=None, offset:int=1):
+        boundry_date = datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=offset)
+
+        lines = []
+        for y in range(last_date.year, boundry_date.year + 1):
+            for m in range(1, 13):
+                for d in (1, 8, 15, 22):
+                    cursor_dt = date(y, m, d)
+                    cursor_dt_str = cursor_dt.strftime('%Y-%m-%d')
+
+                    if cursor_dt <= last_date:
+                        continue
+                    if cursor_dt >= boundry_date:
+                        break
+
+                    lines.extend(f"{name}\t{max}\t{curr}\t{cursor_dt_str}\n" \
+                                 for name, (max, curr) in self.fetch(cursor_dt).items())
+
+        return "".join(lines)
+
+
 if __name__ == '__main__':
-    fetcher = ReservoirCrawler()
-    def go(y, m, d):
-        dt = date(y, m, d)
-        dt_str = dt.strftime('%Y-%m-%d')
-        rslt = fetcher.fetch(date=dt)
-        for name, (max, curr) in rslt.items():
-            print(f"{name}\t{max}\t{curr}\t{dt_str}")
+    tsv_file = "%s/../public/reservoir-history.tsv" % (os.path.dirname(__file__))
 
-    for m in [5,6,7]:
-        for d in [1,8,15,22]:
-            go(2022,m,d)
+    last_line = '2022-01-01\n'
+    with open(tsv_file, 'rb') as f:
+        try:  # catch OSError in case of a one line file
+            f.seek(-2, os.SEEK_END)
+            while f.read(1) != b'\n':
+                f.seek(-2, os.SEEK_CUR)
+        except OSError:
+            f.seek(0)
+        last_line = f.readline().decode()
 
-    go(2022,8,1)
+    last_date = last_line[-11:-1]
+    yy, mm, dd = map(lambda val_str: int(val_str), last_date.split("-"))
+    last_dt = date(yy, mm, dd)
+
+    crawer = ReservoirCrawler()
+    print(crawer.fetch_uppdated_as_tsv(last_date=last_dt))

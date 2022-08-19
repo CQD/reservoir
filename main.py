@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
-from logging import Logger, basicConfig, INFO
+import logging
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -9,15 +9,15 @@ from starlette.responses import FileResponse, PlainTextResponse
 
 from app.data import ReservoirCrawler
 
-basicConfig(level=INFO)
-logger = Logger(__name__)
+
+logger = logging.getLogger(__name__)
 app = FastAPI()
 
 thread_pool = ThreadPoolExecutor(max_workers=1)
 
-# RESERVOIR_DATA[date] = {tsv string, with line break at end}
-RESERVOIR_DATA = {}
 TSV_CONTENT = Path('public/reservoir-history.tsv').read_text()
+TSV_SUPPLEMENTAL = ''
+TSV_YESTERDAY = ''
 
 
 @app.get("/")
@@ -47,50 +47,52 @@ async def robots():
 
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
-    last_date = TSV_CONTENT[-11:-1]
-    thread_pool.submit(fetch_new_data, last_date)
+    result_tsv = TSV_CONTENT + TSV_SUPPLEMENTAL + TSV_YESTERDAY
 
     yesterday = datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=1)
     yesterday_str = yesterday.strftime('%Y-%m-%d')
-    cache_time = 86400 if yesterday_str in RESERVOIR_DATA else 600
+
+    last_date_str = result_tsv[-11:-1]
+
+    cache_time = 86400
+    if last_date_str < yesterday_str:
+        thread_pool.submit(fetch_new_data)
+        cache_time = 600
 
     headers = {'Cache-Control': f'public, max-age={cache_time}'}
-    return PlainTextResponse(TSV_CONTENT + "".join(RESERVOIR_DATA.values()), headers=headers)
+    return PlainTextResponse(result_tsv, headers=headers)
 
 
-def fetch_new_data(last_date:str) -> str:
-    global RESERVOIR_DATA
+def fetch_new_data() -> str:
+    global TSV_SUPPLEMENTAL, TSV_YESTERDAY
 
-    yesterday = datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=1)
-    yy, mm, dd = map(lambda val_str: int(val_str), last_date.split("-"))
-    last_dt = date(yy, mm, dd)
+    # 更新固定資料點的資料
+    tsv = TSV_SUPPLEMENTAL if TSV_SUPPLEMENTAL else TSV_CONTENT
+    last_date_str = tsv[-11:-1]
+
+    yy, mm, dd = map(lambda val_str: int(val_str), last_date_str.split("-"))
+    last_date = date(yy, mm, dd)
+
+    logger.warn(f"最新資料時間是 {last_date}，撈取更新的資料")
 
     crawer = ReservoirCrawler()
-    for y in range(last_dt.year, yesterday.year + 1):
-        for m in range(1, 13):
-            for d in (1, 8, 15, 22):
-                cursor_dt = date(y, m, d)
-                cursor_dt_str = cursor_dt.strftime('%Y-%m-%d')
+    TSV_SUPPLEMENTAL += crawer.fetch_uppdated_as_tsv(last_date=last_date)
 
-                if cursor_dt_str in RESERVOIR_DATA:
-                    continue
-                if cursor_dt <= last_dt:
-                    continue
-                if cursor_dt >= yesterday:
-                    break
-
-                lines = [f"{name}\t{max}\t{curr}\t{cursor_dt_str}\n"
-                         for name, (max, curr) in crawer.fetch(cursor_dt).items()]
-
-                RESERVOIR_DATA[cursor_dt_str] = "".join(lines)
-
-    # 確保有新資料
+    # 更新「昨天」的資料
+    yesterday = datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=1)
     yesterday_str = yesterday.strftime('%Y-%m-%d')
-    if last_date < yesterday_str and yesterday_str not in RESERVOIR_DATA:
-        lines = [f"{name}\t{max}\t{curr}\t{yesterday_str}\n"
-                    for name, (max, curr) in crawer.fetch(yesterday).items()]
-        RESERVOIR_DATA[yesterday_str] = "".join(lines)
 
+    last_date_str = '2022-01-01'
+    if TSV_YESTERDAY:
+        last_date_str = TSV_YESTERDAY[-11:-1]
+
+    if last_date_str < yesterday_str:
+        lines = [f"{name}\t{max}\t{curr}\t{yesterday_str}\n"
+                 for name, (max, curr) in crawer.fetch(yesterday).items()]
+        TSV_YESTERDAY = "".join(lines)
+
+
+thread_pool.submit(fetch_new_data)
 
 
 if __name__ == '__main__':
