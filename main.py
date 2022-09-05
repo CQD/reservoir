@@ -63,7 +63,7 @@ async def reservoir_history():
     return PlainTextResponse(result_tsv, headers=headers)
 
 
-def fetch_new_data() -> str:
+def fetch_new_data():
     global TSV_SUPPLEMENTAL, TSV_YESTERDAY
 
     # 更新固定資料點的資料
