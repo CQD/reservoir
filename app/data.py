@@ -137,4 +137,4 @@ if __name__ == '__main__':
     last_dt = date(yy, mm, dd)
 
     crawer = ReservoirCrawler()
-    print(crawer.fetch_uppdated_as_tsv(last_date=last_dt))
+    print(crawer.fetch_uppdated_as_tsv(last_date=last_dt), end='')
