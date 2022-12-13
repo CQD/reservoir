@@ -24,7 +24,7 @@ html,body{
 }
 
 header{
-  padding:1em 1em 3em;
+  padding:1em 1em 2em;
   background:
     radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent),
     radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent) 0 -50px;
@@ -32,20 +32,31 @@ header{
   background-size:75px 100px;
   text-align: center;
   color:#ddd;
-  border-bottom: 4px dashed #eee;
 }
 header h1{
   font-size: 40px;
   margin-bottom:0px;
   padding-bottom:0px;
 }
-header a:link, header a:visited{
-  display: inline-block;
-  color:#fff;
-  background-color: var(--thisyear-color);
-  padding:5px 1em;
-  border-radius: 4px;
-  margin: 2px 1em;
+
+#summary_wrapper{
+  display: flex;
+  justify-content: center;
+  gap: 2em;
+  padding: 30px 1em;
+  display: none;
+}
+
+.summary {
+  background-color:#fff;
+  padding:1.5em 1.7em;
+  border-radius:4px;
+  vertical-align: baseline;
+}
+
+.summary a, .summary a:link,.summary a:visited{
+  color: #a51;
+  text-decoration: underline;
 }
 
 #main{
@@ -287,11 +298,24 @@ footer img{
     padding-bottom:2em;
   }
 
+  #summary_wrapper{
+    gap:1em;
+  }
+  .summary{
+    padding: 1em 1.3em;
+  }
+
   div.reservoirs{
     grid-template-columns: 1fr
   }
   svg.group text.name{
     font-size:24px;
+  }
+}
+
+@media (max-width: 500px) {
+  #summary_wrapper{
+    flex-direction: column;
   }
 }
 </style>
@@ -310,12 +334,12 @@ gtag('config', 'G-93370QFS9E');
 <header>
 <h1>台灣水庫即時水情與歷年統計</h1>
 <p id="desc">2012-01-01 至今台灣北中南區各大水庫的蓄水量統計。</p>
-<nav>
-  <a href="#北部">北部</a>
-  <a href="#中部">中部</a>
-  <a href="#南部">南部</a>
-</nav>
 </header>
+<div id="summary_wrapper">
+<div class="summary"><a href="#北部">北部</a>蓄水量正常（93.1%）</div>
+<div class="summary"><a href="#中部">中部</a>蓄水量正常（93.1%）</div>
+<div class="summary"><a href="#南部">南部</a>蓄水量較低（43.1%）<br>曾文、蘭潭水庫水位偏低</div>
+</div>
 <div id="main_wrapper">
 <div id="main">
 <div id="loading">
@@ -342,6 +366,17 @@ gtag('config', 'G-93370QFS9E');
 
 </footer>
 <script>
+const reservoir_group = {
+  "北部": ["翡翠水庫", "石門水庫", "寶山第二水庫", "新山水庫", "大埔水庫", "寶山水庫", "西勢水庫"],
+  "中部": ["德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"],
+  "南部": ["曾文水庫", "南化水庫", "烏山頭水庫", "牡丹水庫", "仁義潭水庫", "阿公店水庫", "白河水庫", "蘭潭水庫", "鳳山水庫", "澄清湖水庫", "鏡面水庫"],
+}
+const reservoir_group_percentage = {
+  "北部":0,
+  "中部":0,
+  "南部":0,
+}
+
 function lineOver(e) {
   let year = e.target.dataset['year']
   if (e.target.classList.contains('thisyear')) {
@@ -441,6 +476,8 @@ function groupChart(group_name, group_data) {
 
     return g
   }
+
+  reservoir_group_percentage[group_name] = total_amount/total_max
 
   let g = makeG(`${group_name}合計`, 1, total_amount/total_max)
   g.setAttribute('transform', 'scale(2)')
@@ -591,12 +628,6 @@ function reservoirChart(data, max) {
 }
 
 function redraw() {
-  const reservoir_group = {
-    "北部": ["翡翠水庫", "石門水庫", "寶山第二水庫", "新山水庫", "大埔水庫", "寶山水庫", "西勢水庫"],
-    "中部": ["德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"],
-    "南部": ["曾文水庫", "南化水庫", "烏山頭水庫", "牡丹水庫", "仁義潭水庫", "阿公店水庫", "白河水庫", "蘭潭水庫", "鳳山水庫", "澄清湖水庫", "鏡面水庫"],
-  }
-
   const main = document.createElement('div')
 
   for (const [group_name, reservoir_names] of Object.entries(reservoir_group)) {
@@ -671,6 +702,17 @@ function redraw() {
   });
 }
 
+function median(values){
+  values.sort((a,b) => a - b)
+  const half = Math.floor(values.length / 2)
+  return (values.length % 2) ? values[half] : (values[half - 1] + values[half]) / 2.0
+}
+
+function stddev(values){
+  const len = values.length
+  const mean = values.reduce((a, b) => a + b) / len
+  return Math.sqrt(values.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / len)
+}
 </script>
 <script>
 let reservoir_history = {}
@@ -714,6 +756,83 @@ fetch('/api/reservoir-history.tsv')
 
   const desc = document.getElementById('desc')
   desc.textContent = desc.textContent.replace('2012-01-01 至今', `2012-01-01 至 ${datatime} `)
+})
+.then(() => {
+  const reservoir_history_today = {}
+
+  // 計算每個水庫的每年今天的中位數跟標準差
+  const m = datatime.substring(5,7)
+  let d = parseInt(datatime.substring(8, 10))
+  if (d > 22) d = '22'
+  else if (d > 15) d = '15'
+  else if (d > 8) d = '08'
+  else d = '01'
+
+  const max_year = parseInt(datatime.substring(0, 4))
+  let all_reservoir_names = Object.values(reservoir_group).reduce((a,b) => a.concat(b))
+  for (const name of all_reservoir_names) {
+    let values = []
+    for (let year = 2012; year <= max_year; year++) {
+      const ymd = `${year}-${m}-01`
+      const year_history = reservoir_history[name][year] || {}
+      const value = year_history[ymd] || -1
+      if (value > 0) {
+        values.push(parseFloat(value))
+      }
+    }
+    reservoir_history_today[name] = {
+      "median": median(values),
+      "stddev": stddev(values),
+    }
+  }
+
+  // 計算每個群組有哪些水庫缺水
+  const need_water_reservoirs = {
+    "北部":[],
+    "中部":[],
+    "南部":[],
+  }
+
+  for (const [group_name, reservoir_names] of Object.entries(reservoir_group)) {
+    for (const name of reservoir_names) {
+      const current_value = parseFloat(reservoir_current[name])
+      const median = reservoir_history_today[name]['median']
+      const stddev = reservoir_history_today[name]['stddev']
+      const diff = median - current_value
+      if (diff > stddev && (diff / median) > 0.20) {
+        need_water_reservoirs[group_name].push(name.replace("水庫", ""))
+      }
+    }
+  }
+
+  // 寫成 summary
+  const summary_wrapper = document.getElementById('summary_wrapper')
+  summary_wrapper.querySelectorAll('.summary').forEach(ele => ele.remove())
+  for (const group_name of ["北部", "中部", "南部"]) {
+    const summary = document.createElement('div')
+    summary.classList.add('summary')
+
+    let percentage = reservoir_group_percentage[group_name]
+    percentage = `${(percentage*100).toPrecision(3)}%`
+
+    const group_Link = document.createElement('a')
+    group_Link.href = `#${group_name}`
+    group_Link.text = group_name
+    summary.append(group_Link)
+
+    summary.append(document.createTextNode(`總蓄水量 ${percentage}，`))
+    if (need_water_reservoirs[group_name].length > 0) {
+      const res = need_water_reservoirs[group_name].join("、")
+      summary.append(document.createTextNode(`${res}水庫水位偏低`))
+    } else {
+      summary.append(document.createTextNode(`水情正常`))
+    }
+
+
+    summary_wrapper.append(summary)
+  }
+
+  summary_wrapper.style.display = 'flex'
 })
 
 document.body.addEventListener('click', () => highlight_year(''))
