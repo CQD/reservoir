@@ -823,13 +823,21 @@ fetch('/api/reservoir-history.tsv')
     summary.append(group_Link)
 
     summary.append(document.createTextNode(`總蓄水量 ${percentage}，`))
-    if (need_water_reservoirs[group_name].length > 0) {
-      const res = need_water_reservoirs[group_name].join("、")
-      summary.append(document.createTextNode(`${res}水庫水位偏低`))
+    const need_water_list = need_water_reservoirs[group_name]
+    if (need_water_list.length > 0) {
+      for (let i = 0; i < need_water_list.length; i++) {
+        const res = document.createElement('a')
+        res.textContent = need_water_list[i]
+        res.href = `#${need_water_list[i]}水庫`
+        summary.append(res)
+        if (need_water_list.length - i > 1) {
+          summary.append(document.createTextNode('、'))
+        }
+      }
+      summary.append(document.createTextNode(`水庫水位偏低`))
     } else {
       summary.append(document.createTextNode(`水情正常`))
     }
-
 
     summary_wrapper.append(summary)
   }
