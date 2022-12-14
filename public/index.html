@@ -691,7 +691,9 @@ function redraw() {
   document.getElementById('main').remove()
   main.setAttribute('id', 'main')
   document.getElementById('main_wrapper').append(main)
+}
 
+function smoothLink() {
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
    anchor.addEventListener('click', function (e) {
       e.preventDefault();
@@ -834,6 +836,7 @@ fetch('/api/reservoir-history.tsv')
 
   summary_wrapper.style.display = 'flex'
 })
+.then(smoothLink)
 
 document.body.addEventListener('click', () => highlight_year(''))
 
@@ -842,6 +845,7 @@ window.addEventListener('resize', (e) => {
   let new_mobile_mode = window.innerWidth <= 800
   if (new_mobile_mode != mobile_mode) {
     redraw()
+    smoothLink()
     mobile_mode = new_mobile_mode
   }
 })
