@@ -3,7 +3,7 @@ CONTAINER_NAME=tw-reservoir
 
 OPTIONS:=
 
-run:
+up:
 	docker start ${CONTAINER_NAME}
 
 stop:
