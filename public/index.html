@@ -10,7 +10,7 @@
 <meta property="og:image" content="https://reservoir.cqd.tw/og.png">
 <style>
 :root{
-  --bg-color: #eee;
+  --bg-color: #e0e0e0;
   --thisyear-color: rgb(202, 158, 46);
   --year-color: rgb(0,160,240);
   --grid-color: #333;
@@ -23,15 +23,21 @@ html,body{
   margin:0px;
 }
 
+body{
+  max-width:1700px;
+  margin:0 auto;
+}
+
 header{
-  padding:1em 1em 2em;
+  padding:1em min(15vw,100px) 2em;
   background:
     radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent),
     radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent) 0 -50px;
-  background-color: #48b;
+  background-color: #128;
   background-size:75px 100px;
   text-align: center;
   color:#ddd;
+  border-radius:0 0 100% 100%;
 }
 header h1{
   font-size: 40px;
@@ -166,7 +172,7 @@ svg.group text.percent{
 div.reservoirs{
   margin-top:30px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap:15px;
 }
 
@@ -288,6 +294,12 @@ footer img{
   }
 }
 
+
+@media (max-width: 1200px) {
+  div.reservoirs{
+    grid-template-columns: 1fr 1fr
+  }
+}
 
 
 @media (max-width: 800px) {
