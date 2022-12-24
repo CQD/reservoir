@@ -379,11 +379,6 @@ const reservoir_group = {
   "中部": ["德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"],
   "南部": ["曾文水庫", "南化水庫", "烏山頭水庫", "牡丹水庫", "仁義潭水庫", "阿公店水庫", "白河水庫", "蘭潭水庫", "鳳山水庫", "澄清湖水庫", "鏡面水庫"],
 }
-const reservoir_group_percentage = {
-  "北部":0,
-  "中部":0,
-  "南部":0,
-}
 
 function lineOver(e) {
   let year = e.target.dataset['year']
@@ -417,24 +412,41 @@ function middleColor(c1, c2, pos) {
   return `rgba(${color.join(",")})`
 }
 
+
+function get_column_size() {
+  const SIZE_DEF = [
+    [1000, 8],
+    [800, 6],
+    [450, 4],
+    [1, 3],
+  ]
+
+  for (const [wid, col] of SIZE_DEF) {
+    if (window.innerWidth > wid) {
+      return col
+    }
+  }
+  return 8
+}
+
 function groupChart(group_name, group_data) {
   const g_height = 150
   const g_width = 140
   const g_radius = 60
-  const g_gap = 20
+  const g_gap = 10
 
   const FULL_RGB = [0, 160, 240]
   const HALF_RGB = [202, 158, 46]
   const DRY_RGB  = [240, 60, 0]
 
-  const width = (window.innerWidth > 800) ? (g_width * 8 + g_gap * 7 + 10) : (g_width * 4 + g_gap * 3 + 10)
-  const height = (window.innerWidth > 800) ? (g_height * 2) : (Math.ceil(group_data.length / 4) + 1) * g_height
+  const column_size = get_column_size()
+
+  const width = (g_width * (column_size) + g_gap * (column_size - 1) + 10)
+  const height = (Math.ceil(group_data.length / column_size)) * g_height
 
   const group_radius = 130
   const item_radius = 80
 
-  const total_max = group_data.reduce((prev, ele) => prev + ele.max, 0)
-  const total_amount = group_data.reduce((prev, ele) => prev + ele.amount, 0)
   const max_max = group_data.reduce((prev, ele) => Math.max(ele.max, prev), 0)
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -485,13 +497,7 @@ function groupChart(group_name, group_data) {
     return g
   }
 
-  reservoir_group_percentage[group_name] = total_amount/total_max
-
-  let g = makeG(`${group_name}合計`, 1, total_amount/total_max)
-  g.setAttribute('transform', 'scale(2)')
-  svg.append(g)
-
-  const start_x = g_width * 2 + g_gap * 2
+  const start_x = g_gap
   let x = start_x
   let y = 0
   group_data.forEach(ele => {
@@ -822,17 +828,15 @@ fetch('/api/reservoir-history.tsv')
     const summary = document.createElement('div')
     summary.classList.add('summary')
 
-    let percentage = reservoir_group_percentage[group_name]
-    percentage = `${(percentage*100).toPrecision(3)}%`
-
     const group_Link = document.createElement('a')
     group_Link.href = `#${group_name}`
     group_Link.text = group_name
     summary.append(group_Link)
+    summary.append(document.createTextNode(`地區`))
 
-    summary.append(document.createTextNode(`總蓄水量 ${percentage}，`))
     const need_water_list = need_water_reservoirs[group_name]
     if (need_water_list.length > 0) {
+      // 有水庫水位偏低
       for (let i = 0; i < need_water_list.length; i++) {
         const res = document.createElement('a')
         res.textContent = need_water_list[i]
@@ -844,6 +848,7 @@ fetch('/api/reservoir-history.tsv')
       }
       summary.append(document.createTextNode(`水庫水位偏低`))
     } else {
+      // 水庫水位都夠高
       summary.append(document.createTextNode(`水情正常`))
     }
 
@@ -856,13 +861,13 @@ fetch('/api/reservoir-history.tsv')
 
 document.body.addEventListener('click', () => highlight_year(''))
 
-let mobile_mode = window.innerWidth <= 800
+let column_size = get_column_size()
 window.addEventListener('resize', (e) => {
-  let new_mobile_mode = window.innerWidth <= 800
-  if (new_mobile_mode != mobile_mode) {
+  let new_column_size = get_column_size()
+  if (new_column_size != column_size) {
     redraw()
     smoothLink()
-    mobile_mode = new_mobile_mode
+    column_size = new_column_size
   }
 })
 </script>
