@@ -494,7 +494,12 @@ function groupChart(group_name, group_data) {
     percent_text.setAttribute('y', (size > 0.35) ? g_radius : g_radius * 1.6)
     g.append(percent_text)
 
-    return g
+
+    const link_wrapper = document.createElementNS("http://www.w3.org/2000/svg", "a");
+    link_wrapper.append(g)
+    link_wrapper.href.baseVal = `#${name}`
+
+    return link_wrapper
   }
 
   const start_x = g_gap
@@ -708,13 +713,18 @@ function redraw() {
 }
 
 function smoothLink() {
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-   anchor.addEventListener('click', function (e) {
-      e.preventDefault();
-      const name = this.getAttribute('href').replace('#', '')
-      document.querySelector(`a[name="${name}"]`).scrollIntoView({behavior: 'smooth'});
-      history.pushState({}, null, e.target.href)
-    });
+  const smoothLinkHandler = function (e) {
+    e.preventDefault();
+    const name = this.getAttribute('href').replace('#', '')
+    document.querySelector(`a[name="${name}"]`).scrollIntoView({behavior: 'smooth'});
+    history.pushState({}, null, e.target.href)
+  }
+
+  const normal_links = document.querySelectorAll('a[href^="#"]')
+  const svg_links = document.querySelectorAll('svg a');
+
+  ([...normal_links, ...svg_links]).forEach(anchor => {
+    anchor.addEventListener('click', smoothLinkHandler);
   });
 }
 
