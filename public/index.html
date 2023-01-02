@@ -814,10 +814,10 @@ fetch('/api/reservoir-history.tsv')
   }
 
   // 計算每個群組有哪些水庫缺水
-  const need_water_reservoirs = {
-    "北部":[],
-    "中部":[],
-    "南部":[],
+  const low_level_reservoirs = {
+    "北部":[[], []],
+    "中部":[[], []],
+    "南部":[[], []],
   }
 
   for (const [group_name, reservoir_names] of Object.entries(reservoir_group)) {
@@ -826,13 +826,40 @@ fetch('/api/reservoir-history.tsv')
       const median = reservoir_history_today[name]['median']
       const stddev = reservoir_history_today[name]['stddev']
       const diff = median - current_value
-      if (diff > stddev && (diff / median) > 0.20) {
-        need_water_reservoirs[group_name].push(name.replace("水庫", ""))
+
+      if (diff < stddev) continue
+
+      if (diff / median > 0.24) {
+        low_level_reservoirs[group_name][0].push(name.replace("水庫", ""))
       }
+      else if (diff / median > 0.12) {
+        low_level_reservoirs[group_name][1].push(name.replace("水庫", ""))
+      }
+
     }
   }
 
   // 寫成 summary
+
+  function reservoir_link(name) {
+    const res = document.createElement('a')
+    res.textContent = name
+    res.href = `#${name}水庫`
+    return res
+  }
+
+  function sm(summary, name_list, msg) {
+    if (name_list.length <= 0) return
+
+    for (let i = 0; i < name_list.length; i++) {
+      summary.append(reservoir_link(name_list[i]))
+      if (name_list.length - i > 1) {
+        summary.append(document.createTextNode('、'))
+      }
+    }
+    summary.append(document.createTextNode(msg))
+  }
+
   const summary_wrapper = document.getElementById('summary_wrapper')
   summary_wrapper.querySelectorAll('.summary').forEach(ele => ele.remove())
   for (const group_name of ["北部", "中部", "南部"]) {
@@ -843,26 +870,15 @@ fetch('/api/reservoir-history.tsv')
     group_Link.href = `#${group_name}`
     group_Link.text = group_name
     summary.append(group_Link)
-    summary.append(document.createTextNode(`地區`))
+    summary.append(document.createTextNode(`：`))
 
-    const need_water_list = need_water_reservoirs[group_name]
-    if (need_water_list.length > 0) {
-      // 有水庫水位偏低
-      for (let i = 0; i < need_water_list.length; i++) {
-        const res = document.createElement('a')
-        res.textContent = need_water_list[i]
-        res.href = `#${need_water_list[i]}水庫`
-        summary.append(res)
-        if (need_water_list.length - i > 1) {
-          summary.append(document.createTextNode('、'))
-        }
-      }
-      summary.append(document.createTextNode(`水庫水位偏低`))
-    } else {
-      // 水庫水位都夠高
+    const [very_lows, lows] = low_level_reservoirs[group_name]
+    sm(summary, very_lows, '水庫水位過低。')
+    sm(summary, lows, '水庫水位略低。')
+
+    if (very_lows.length <= 0 && lows.length <=0) {
       summary.append(document.createTextNode(`水情正常`))
     }
-
     summary_wrapper.append(summary)
   }
 
