@@ -573,8 +573,6 @@ function reservoirChart(data, max) {
     svg.append(line)
   }
 
-  svg.append(endpoint)
-
   const year_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
   year_text.classList.add('year_text')
   year_text.setAttribute("x", width - 10)
@@ -642,6 +640,9 @@ function reservoirChart(data, max) {
     line.classList.add("grid")
     svg.append(line)
   });
+
+  // 目前資料點位置，最後再畫，避免被格線蓋住
+  svg.append(endpoint)
 
   return svg
 }
