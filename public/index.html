@@ -45,26 +45,6 @@ header h1{
   padding-bottom:0px;
 }
 
-#summary_wrapper{
-  display: flex;
-  justify-content: center;
-  gap: 2em;
-  padding: 30px 1em;
-  display: none;
-}
-
-.summary {
-  background-color:#fff;
-  padding:1.5em 1.7em;
-  border-radius:4px;
-  vertical-align: baseline;
-}
-
-.summary a, .summary a:link,.summary a:visited{
-  color: #a51;
-  text-decoration: underline;
-}
-
 #main{
   padding:0 1em;
   min-height: 50vh;
@@ -310,12 +290,6 @@ footer img{
     padding-bottom:2em;
   }
 
-  #summary_wrapper{
-    gap:1em;
-  }
-  .summary{
-    padding: 1em 1.3em;
-  }
 
   div.reservoirs{
     grid-template-columns: 1fr
@@ -325,11 +299,6 @@ footer img{
   }
 }
 
-@media (max-width: 500px) {
-  #summary_wrapper{
-    flex-direction: column;
-  }
-}
 </style>
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-93370QFS9E"></script>
@@ -347,7 +316,7 @@ gtag('config', 'G-93370QFS9E');
 <h1>台灣水庫即時水情與歷年統計</h1>
 <p id="desc">2012-01-01 至今台灣各大水庫蓄水量統計</p>
 </header>
-<div id="summary_wrapper"></div>
+
 <div id="main_wrapper">
 <div id="main">
 <div id="loading">
@@ -783,106 +752,6 @@ fetch('/api/reservoir-history.tsv')
 
   const desc = document.getElementById('desc')
   desc.textContent = desc.textContent.replace('2012-01-01 至今', `2012-01-01 至 ${datatime} `)
-})
-.then(() => {
-  const reservoir_history_today = {}
-
-  // 計算每個水庫的每年今天的中位數跟標準差
-  const m = datatime.substring(5,7)
-  let d = parseInt(datatime.substring(8, 10))
-  if (d > 22) d = '22'
-  else if (d > 15) d = '15'
-  else if (d > 8) d = '08'
-  else d = '01'
-
-  const max_year = parseInt(datatime.substring(0, 4))
-  let all_reservoir_names = Object.values(reservoir_group).reduce((a,b) => a.concat(b))
-  for (const name of all_reservoir_names) {
-    let values = []
-    for (let year = 2012; year <= max_year; year++) {
-      const ymd = `${year}-${m}-01`
-      const year_history = reservoir_history[name][year] || {}
-      const value = year_history[ymd] || -1
-      if (value > 0) {
-        values.push(parseFloat(value))
-      }
-    }
-    reservoir_history_today[name] = {
-      "median": median(values),
-      "stddev": stddev(values),
-    }
-  }
-
-  // 計算每個群組有哪些水庫缺水
-  const low_level_reservoirs = {
-    "北部":[[], []],
-    "中部":[[], []],
-    "南部":[[], []],
-  }
-
-  for (const [group_name, reservoir_names] of Object.entries(reservoir_group)) {
-    for (const name of reservoir_names) {
-      const current_value = parseFloat(reservoir_current[name])
-      const median = reservoir_history_today[name]['median']
-      const stddev = reservoir_history_today[name]['stddev']
-      const diff = median - current_value
-
-      if (diff < stddev) continue
-
-      if (diff / median > 0.24) {
-        low_level_reservoirs[group_name][0].push(name.replace("水庫", ""))
-      }
-      else if (diff / median > 0.12) {
-        low_level_reservoirs[group_name][1].push(name.replace("水庫", ""))
-      }
-
-    }
-  }
-
-  // 寫成 summary
-
-  function reservoir_link(name) {
-    const res = document.createElement('a')
-    res.textContent = name
-    res.href = `#${name}水庫`
-    return res
-  }
-
-  function sm(summary, name_list, msg) {
-    if (name_list.length <= 0) return
-
-    for (let i = 0; i < name_list.length; i++) {
-      summary.append(reservoir_link(name_list[i]))
-      if (name_list.length - i > 1) {
-        summary.append(document.createTextNode('、'))
-      }
-    }
-    summary.append(document.createTextNode(msg))
-  }
-
-  const summary_wrapper = document.getElementById('summary_wrapper')
-  summary_wrapper.querySelectorAll('.summary').forEach(ele => ele.remove())
-  for (const group_name of ["北部", "中部", "南部"]) {
-    const summary = document.createElement('div')
-    summary.classList.add('summary')
-
-    const group_Link = document.createElement('a')
-    group_Link.href = `#${group_name}`
-    group_Link.text = group_name
-    summary.append(group_Link)
-    summary.append(document.createTextNode(`：`))
-
-    const [very_lows, lows] = low_level_reservoirs[group_name]
-    sm(summary, very_lows, '水庫水位過低。')
-    sm(summary, lows, '水庫水位略低。')
-
-    if (very_lows.length <= 0 && lows.length <=0) {
-      summary.append(document.createTextNode(`水情正常`))
-    }
-    summary_wrapper.append(summary)
-  }
-
-  summary_wrapper.style.display = 'flex'
 })
 .then(smoothLink)
 
