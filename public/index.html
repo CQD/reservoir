@@ -29,7 +29,7 @@ body{
 }
 
 header{
-  padding:1em min(15vw,100px) 2em;
+  padding:1em min(15vw,100px) 1.5em;
   background:
     radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent),
     radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent) 0 -50px;
@@ -41,13 +41,16 @@ header{
 }
 header h1{
   font-size: 40px;
-  margin-bottom:0px;
-  padding-bottom:0px;
+  margin:0px;
+  padding:0px;
 }
 
+#summary{
+  padding:0 1rem 2rem;
+  border-bottom:2px solid #333;
+}
 #main{
   padding:0 1em;
-  min-height: 50vh;
 }
 
 a:link, a:visited{
@@ -64,14 +67,18 @@ a:hover .link_symbol{
   opacity: 1;
 }
 
-#main h2{
+#main h2,#summary h2{
   border-top: 3px dashed var(--grid-color);
-  margin-top: 1em;
-  padding-top: 1em;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  margin-bottom:0.2rem;
+  font-size: 1.5rem;
+  display: block;
 }
-#main h2:first-of-type{
-  border-top: none;
-  padding-top: initial;
+#main h2:first-of-type,#summary h2:first-of-type{
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 2rem;
 }
 
 svg polyline{
@@ -130,7 +137,7 @@ svg.group{
   margin-bottom: 20px;
 }
 svg.group text.name{
-  font-size: 18px;
+  font-size: 16px;
   text-anchor:middle;
   dominant-baseline: bottom;
   fill: var(--grid-color);
@@ -139,12 +146,11 @@ svg.group text.name{
 }
 
 svg.group text.percent{
-  font-size: 25px;
+  font-size: 23px;
   text-anchor: middle;
   dominant-baseline: central;
   fill: #fff;
   font-weight: bold;
-  opacity: 0.9;
   stroke-width: 5;
   paint-order: stroke;
 }
@@ -191,9 +197,11 @@ footer img{
 
 #loading{
   text-align: center;
-  margin: 30vh auto;
+  margin: 0 auto;
+  padding:20vh 0 10vh;
   color:#789;
   font-size: 20px;
+  min-height: 30vh;
   animation: appear 0.4s;
 }
 @keyframes appear {
@@ -295,7 +303,7 @@ footer img{
     grid-template-columns: 1fr
   }
   svg.group text.name{
-    font-size:24px;
+    font-size:18px;
   }
 }
 
@@ -316,14 +324,17 @@ gtag('config', 'G-93370QFS9E');
 <h1>台灣水庫即時水情與歷年統計</h1>
 <p id="desc">2012-01-01 至今台灣各大水庫蓄水量統計</p>
 </header>
+<div id="summary_wrapper">
+<div id="summary">
+  <div id="loading">
+    <div class="lds-grid"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    載入資料中
+    </div>
+</div>
+</div>
 
 <div id="main_wrapper">
-<div id="main">
-<div id="loading">
-<div class="lds-grid"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
-載入資料中
-</div>
-</div>
+<div id="main"></div>
 </div>
 
 <footer>
@@ -384,9 +395,12 @@ function middleColor(c1, c2, pos) {
 
 function get_column_size() {
   const SIZE_DEF = [
-    [1000, 8],
-    [800, 6],
-    [450, 4],
+    [1000, 9],
+    [880, 8],
+    [760, 7],
+    [640, 6],
+    [520, 5],
+    [400, 4],
     [1, 3],
   ]
 
@@ -399,10 +413,10 @@ function get_column_size() {
 }
 
 function groupChart(group_name, group_data) {
-  const g_height = 150
-  const g_width = 140
-  const g_radius = 60
-  const g_gap = 10
+  const g_height = 120
+  const g_width = 110
+  const g_radius = 50
+  const g_gap = 5
 
   const FULL_RGB = [0, 160, 240]
   const HALF_RGB = [202, 158, 46]
@@ -435,14 +449,16 @@ function groupChart(group_name, group_data) {
     }
 
     const circle_outer = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle_outer.setAttribute('r', size * g_radius)
+    const outer_radius = size * g_radius
+    circle_outer.setAttribute('r', outer_radius)
     circle_outer.setAttribute('cx', g_width / 2)
     circle_outer.setAttribute('cy', g_radius)
-    circle_outer.setAttribute('fill', '#d4d4d4')
+    circle_outer.setAttribute('fill', '#c9c9c9')
     g.append(circle_outer)
 
     const circle_inner = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle_inner.setAttribute('r', size * g_radius * (Math.pow(fill_rate, 0.5)))
+    const inner_raduis = size * g_radius * (Math.pow(fill_rate, 0.5))
+    circle_inner.setAttribute('r', inner_raduis)
     circle_inner.setAttribute('cx', g_width / 2)
     circle_inner.setAttribute('cy', g_radius)
     circle_inner.setAttribute('fill', color_str)
@@ -460,7 +476,7 @@ function groupChart(group_name, group_data) {
     percent_text.classList.add('percent')
     percent_text.setAttribute('stroke', color_str)
     percent_text.setAttribute('x', g_width / 2)
-    percent_text.setAttribute('y', (size > 0.35) ? g_radius : g_radius * 1.6)
+    percent_text.setAttribute('y', (inner_raduis > 13 && outer_radius > 25) ? g_radius : g_radius * 1.6)
     g.append(percent_text)
 
 
@@ -618,6 +634,7 @@ function reservoirChart(data, max) {
 
 function redraw() {
   const main = document.createElement('div')
+  const summary = document.createElement('aside')
 
   for (const [group_name, reservoir_names] of Object.entries(reservoir_group)) {
     const group_title = document.createElement("h2")
@@ -673,13 +690,19 @@ function redraw() {
 
     main.append(anchor)
     main.append(group_title)
-    main.append(group_chart)
     main.append(reservoirs)
+
+    summary.append(group_title.cloneNode(true))
+    summary.append(group_chart)
   }
 
   document.getElementById('main').remove()
   main.setAttribute('id', 'main')
   document.getElementById('main_wrapper').append(main)
+
+  document.getElementById('summary').remove()
+  summary.setAttribute('id', 'summary')
+  document.getElementById('summary_wrapper').append(summary)
 }
 
 function smoothLink() {
