@@ -430,7 +430,7 @@ function groupChart(group_name, group_data) {
   const group_radius = 130
   const item_radius = 80
 
-  const max_max = group_data.reduce((prev, ele) => Math.max(ele.max, prev), 0)
+  const max_max = Object.values(reservoir_max).reduce((a, b) => Math.max(a, b))
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.classList.add('group')
