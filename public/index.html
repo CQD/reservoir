@@ -81,6 +81,15 @@ a:hover .link_symbol{
   padding-top: 2rem;
 }
 
+.chart_wrapper{
+  transition: background-color 0.3s;
+  background-color: rgba(255,255,128,0);
+  border-radius: 10px;
+}
+.chart_wrapper.highlight{
+  background-color: rgba(255,255,128,0.8);
+}
+
 svg polyline{
   transition: all 0.17s;
   stroke:var(--grid-color);
@@ -660,6 +669,8 @@ function redraw() {
       }
 
       const content = document.createElement("div")
+      content.setAttribute("id", `chart_wrapper_${name}`)
+      content.classList.add('chart_wrapper')
 
       const anchor = document.createElement("a")
       anchor.setAttribute('name', name)
@@ -711,6 +722,14 @@ function smoothLink() {
     const name = this.getAttribute('href').replace('#', '')
     document.querySelector(`a[name="${name}"]`).scrollIntoView({behavior: 'smooth'});
     history.pushState({}, null, e.target.href)
+
+    const chart_wrapper = document.getElementById(`chart_wrapper_${name}`)
+    if (chart_wrapper) {
+      chart_wrapper.classList.add('highlight')
+      setTimeout(() => {
+        chart_wrapper.classList.remove('highlight')
+      }, 700)
+    }
   }
 
   const normal_links = document.querySelectorAll('a[href^="#"]')
