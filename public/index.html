@@ -702,6 +702,16 @@ function redraw() {
   document.getElementById('summary_wrapper').append(summary)
 }
 
+function flash_chart(name) {
+  const chart_wrapper = document.getElementById(`chart_wrapper_${name}`)
+  if (chart_wrapper) {
+      chart_wrapper.classList.add('highlight')
+      setTimeout(() => {
+        chart_wrapper.classList.remove('highlight')
+      }, 700)
+    }
+}
+
 function smoothLink() {
   const smoothLinkHandler = function (e) {
     e.preventDefault();
@@ -710,13 +720,7 @@ function smoothLink() {
     document.querySelector(`a[name="${name}"]`).scrollIntoView({behavior: 'smooth'});
     history.pushState({}, null, href)
 
-    const chart_wrapper = document.getElementById(`chart_wrapper_${name}`)
-    if (chart_wrapper) {
-      chart_wrapper.classList.add('highlight')
-      setTimeout(() => {
-        chart_wrapper.classList.remove('highlight')
-      }, 700)
-    }
+    flash_chart(name)
   }
 
   const normal_links = document.querySelectorAll('a[href^="#"]')
@@ -783,6 +787,13 @@ fetch('/api/reservoir-history.tsv')
   desc.textContent = desc.textContent.replace('2012-01-01 至今', `2012-01-01 至 ${datatime} `)
 })
 .then(smoothLink)
+.then(() => {
+  if ( window.location.hash ) {
+    const name = decodeURI(window.location.hash .replace('#', ''))
+    console.log(name)
+    flash_chart(name)
+  }
+})
 
 document.body.addEventListener('click', () => highlight_year(''))
 
