@@ -705,9 +705,10 @@ function redraw() {
 function smoothLink() {
   const smoothLinkHandler = function (e) {
     e.preventDefault();
-    const name = this.getAttribute('href').replace('#', '')
+    const href = this.getAttribute('href')
+    const name = href.replace('#', '')
     document.querySelector(`a[name="${name}"]`).scrollIntoView({behavior: 'smooth'});
-    history.pushState({}, null, e.target.href)
+    history.pushState({}, null, href)
 
     const chart_wrapper = document.getElementById(`chart_wrapper_${name}`)
     if (chart_wrapper) {
