@@ -58,15 +58,6 @@ a:link, a:visited{
   text-decoration: none;
 }
 
-a .link_symbol{
-  opacity: 0;
-  font-size: 90%;
-}
-
-a:hover .link_symbol{
-  opacity: 1;
-}
-
 #main h2,#summary h2{
   border-top: 3px dashed var(--grid-color);
   margin-top: 1rem;
@@ -679,11 +670,6 @@ function redraw() {
       const self_link = document.createElement("a")
       self_link.setAttribute('href', `#${name}`)
       self_link.textContent = name
-
-      const link_symbol = document.createElement("span")
-      link_symbol.classList.add('link_symbol')
-      link_symbol.textContent = '🔗'
-      self_link.append(link_symbol)
 
       const title = document.createElement("h3")
       title.append(self_link)
