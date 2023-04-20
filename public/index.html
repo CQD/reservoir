@@ -283,7 +283,7 @@ gtag('config', 'G-93370QFS9E');
 
 <header>
 <h1>台灣水庫即時水情與歷年統計</h1>
-<p id="desc">2012-01-01 至今台灣各大水庫蓄水量統計</p>
+<p id="desc">資料更新中</p>
 </header>
 <div id="summary_wrapper">
 <div id="summary">
@@ -711,7 +711,7 @@ let reservoir_max = {}
 let datatime = '2022-12-08'
 
 
-fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/86400000)}`)
+fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
 .then(response => response.text())
 .then(tsv => {
   tsv.split("\n")
@@ -743,9 +743,6 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/86400000)}`)
     window.location = window.location
   }
   document.getElementById('datatime').textContent = datatime
-
-  const desc = document.getElementById('desc')
-  desc.textContent = desc.textContent.replace('2012-01-01 至今', `2012-01-01 至 ${datatime} `)
 })
 .then(smoothLink)
 .then(() => {
@@ -754,6 +751,13 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/86400000)}`)
     console.log(name)
     flash_chart(name)
   }
+})
+
+fetch(`/api/update-time?v=${parseInt(new Date().getTime()/3600000)}`)
+.then(response => response.text())
+.then(time => {
+  const desc = document.getElementById('desc')
+  desc.textContent = `資料更新時間：${time}`
 })
 
 document.body.addEventListener('click', () => highlight_year(''))
