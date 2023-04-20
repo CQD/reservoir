@@ -169,11 +169,6 @@ h3{
   color: #666;
   font-size: 14px;
 }
-.desc em{
-  font-style: normal;
-  color: var(--thisyear-color);
-  font-size:16px;
-}
 
 footer{
   margin-top: 50px;
@@ -635,10 +630,9 @@ function redraw() {
       title.append(self_link)
       content.append(title)
 
-      const percentage = (reservoir_current[name] / reservoir_capacity[name]) * 100
       const desc = document.createElement("span")
       desc.classList.add('desc')
-      desc.innerHTML = `（目前蓄水量 <em>${percentage.toPrecision(3)}%</em>）`
+      desc.innerHTML = `（目前蓄水量 ${reservoir_current[name]} 萬立方公尺）`
       content.append(desc)
 
       content.append(reservoirChart(data, reservoir_capacity[name]))
