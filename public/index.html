@@ -390,7 +390,7 @@ function groupChart(group_name, group_data) {
   const group_radius = 130
   const item_radius = 80
 
-  const max_max = Object.values(reservoir_max).reduce((a, b) => Math.max(a, b))
+  const capacity_max = Object.values(reservoir_capacity).reduce((a, b) => Math.max(a, b))
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.classList.add('group')
@@ -451,7 +451,7 @@ function groupChart(group_name, group_data) {
   let x = start_x
   let y = 0
   group_data.forEach(ele => {
-    let g = makeG(ele.name, ele.max / max_max, ele.amount/ele.max)
+    let g = makeG(ele.name, ele.max / capacity_max, ele.amount/ele.max)
     g.setAttribute('transform', `translate(${x}, ${y})`)
     svg.append(g)
     x += g_width + g_gap
@@ -606,7 +606,7 @@ function redraw() {
     const group_data = reservoir_names.map(name => {return {
         "name": name,
         "amount": parseFloat(reservoir_current[name]),
-        "max": parseFloat(reservoir_max[name]),
+        "max": parseFloat(reservoir_capacity[name]),
     }})
     const group_chart = groupChart(group_name, group_data)
 
@@ -635,13 +635,13 @@ function redraw() {
       title.append(self_link)
       content.append(title)
 
-      const percentage = (reservoir_current[name] / reservoir_max[name]) * 100
+      const percentage = (reservoir_current[name] / reservoir_capacity[name]) * 100
       const desc = document.createElement("span")
       desc.classList.add('desc')
       desc.innerHTML = `（目前蓄水量 <em>${percentage.toPrecision(3)}%</em>）`
       content.append(desc)
 
-      content.append(reservoirChart(data, reservoir_max[name]))
+      content.append(reservoirChart(data, reservoir_capacity[name]))
       reservoirs.append(content)
     }
 
@@ -706,7 +706,7 @@ function stddev(values){
 <script>
 let reservoir_history = {}
 let reservoir_current = {}
-let reservoir_max = {}
+let reservoir_capacity = {}
 
 let datatime = '2022-12-08'
 
@@ -717,7 +717,7 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
   tsv.split("\n")
   .forEach(line => {
     if (!line) return;
-    let [reservoir, max, current, ymd] = line.split("\t")
+    let [reservoir, capacity, current, ymd] = line.split("\t")
     let year = ymd.split('-')[0]
     datatime = (datatime < ymd) ? ymd : datatime
 
@@ -731,7 +731,7 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
     reservoir_history[reservoir][year] = reservoir_history[reservoir][year] || {}
     reservoir_history[reservoir][year][ymd] = current
 
-    reservoir_max[reservoir] = Math.max(max, reservoir_max[reservoir] || 0)
+    reservoir_capacity[reservoir] = (capacity>1) ? capacity : reservoir_capacity[reservoir]
     if (current > 0) {
       reservoir_current[reservoir] = current
     }
