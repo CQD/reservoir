@@ -859,12 +859,12 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
       const [x, y] = reservoir_locations[name]
       const res_circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
 
-      const base_radius = 7
-      const radius = base_radius + Math.log(reservoir_capacity[name] / 1000) * 2
+      const base_radius = 4
+      const radius = base_radius + Math.sqrt(reservoir_capacity[name]) / 13
 
       res_circle.setAttribute('cx', x)
       res_circle.setAttribute('cy', y)
-      res_circle.setAttribute('r', Math.max(4, radius))
+      res_circle.setAttribute('r', radius)
       res_circle.setAttribute('id', name)
 
       if (reservoir_capacity[name]) {
