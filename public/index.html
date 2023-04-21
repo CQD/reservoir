@@ -386,6 +386,20 @@ const reservoir_locations = {
     "鏡面水庫":[130,645],
 }
 
+// 水情燈號是不是沒有 API 可以抓...
+// 好像也沒有好爬的官方頁面
+// 水利署：https://www.wra.gov.tw/EarlyWarning.aspx?n=18804&sms=0
+ALERTS = {
+  // 紅燈
+  "hsl(0, 80%, 75%)": [],
+  // 橘燈
+  "hsl(30, 80%, 75%)": ["台南市", "高雄市"],
+  // 黃燈
+  "hsl(60, 80%, 75%)": ["台中市", "新竹縣", "新竹市", "彰化縣", "嘉義縣"],
+  // 綠燈
+  "hsl(90, 80%, 75%)": ["苗栗縣"],
+}
+
 function lineOver(e) {
   let year = e.target.dataset['year']
   if (e.target.classList.contains('thisyear')) {
@@ -872,6 +886,16 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
         res_circle.setAttribute('fill', fillrateToColor(fill_rate))
       }
       reses.append(res_circle)
+    })
+
+    // 然後畫水情燈號
+    Object.keys(ALERTS).forEach(color => {
+      ALERTS[color].forEach(region_name => {
+        const region = map.contentDocument.getElementById(region_name)
+        if (region) {
+          region.setAttribute('fill', color)
+        }
+      })
     })
   })
 })
