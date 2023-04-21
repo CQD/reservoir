@@ -11,3 +11,5 @@
 圖表資料僅包含每月1日/8日/15日/22日，以及前一日的資料，避免圖表資料太過雜亂。
 
 程式跑在 Google App Engine 上，會自動拉經濟部水利署的[水庫蓄水統計表](https://fhy.wra.gov.tw/ReservoirPage_2011/StorageCapacity.aspx)上的最新資料。
+
+每小時會更新一次資料，也可以把網頁開著做為電子看板使用。

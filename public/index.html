@@ -820,6 +820,7 @@ let reservoir_capacity = {}
 
 let datatime = '2022-12-08'
 
+function init(){
 
 fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
 .then(response => response.text())
@@ -907,8 +908,15 @@ fetch(`/api/update-time?v=${parseInt(new Date().getTime()/3600000)}`)
   desc.textContent = `資料更新時間：${time}`
 })
 
+}
+
+// 拉資料並開始繪製圖表（非同步）
+init()
+
+// 游標 highlight 過去年份的線圖
 document.body.addEventListener('click', () => highlight_year(''))
 
+// 當視窗大小改變，重新繪製所有圖表
 let column_size = get_column_size()
 window.addEventListener('resize', (e) => {
   let new_column_size = get_column_size()
@@ -918,6 +926,9 @@ window.addEventListener('resize', (e) => {
     column_size = new_column_size
   }
 })
+
+// 看板模式，每小時更新資料
+setInterval(init, 3600000)
 </script>
 </body>
 </html>
