@@ -60,12 +60,12 @@ async def favicon():
 
 
 @app.get("/github.svg")
-async def favicon():
+async def logo_github():
     return FileResponse('public/github.svg')
 
 
 @app.get("/plurk.svg")
-async def favicon():
+async def logo_plurk():
     return FileResponse('public/plurk.svg')
 
 
