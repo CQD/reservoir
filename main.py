@@ -4,7 +4,7 @@ from pathlib import Path
 from threading import Timer
 from zoneinfo import ZoneInfo
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from starlette.responses import FileResponse, PlainTextResponse
 
 from app.data import ReservoirCrawler
@@ -51,28 +51,16 @@ def shutdown():
 
 
 @app.get("/")
-async def index():
-    return FileResponse('public/index.html')
-
-
 @app.get("/favicon.png")
-async def favicon():
-    return FileResponse('public/favicon.png')
-
-
 @app.get("/github.svg")
-async def logo_github():
-    return FileResponse('public/github.svg')
-
-
 @app.get("/plurk.svg")
-async def logo_plurk():
-    return FileResponse('public/plurk.svg')
-
-
 @app.get("/robots.txt")
-async def robots():
-    return FileResponse('public/robots.txt')
+async def static_file(request: Request):
+    path = request.url.path
+    if path == '/':
+        path = '/index.html'
+
+    return FileResponse(f'public{path}')
 
 
 @app.get("/api/update-time")
