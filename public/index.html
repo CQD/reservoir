@@ -26,10 +26,11 @@ html,body{
 body{
   max-width:1700px;
   margin:0 auto;
+  padding:0 10px;
 }
 
 header{
-  padding:1em min(15vw,100px) 1.5em;
+  padding:0.4em min(15vw,100px) 0.8em;
   background:
     radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent),
     radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,.07) 21%, rgba(255,255,255,.07) 34%, transparent 35%, transparent) 0 -50px;
@@ -37,17 +38,27 @@ header{
   background-size:75px 100px;
   text-align: center;
   color:#ddd;
-  border-radius:0 0 100% 100%;
+  margin-bottom:1em;
+  border-radius: 0 0 15px 15px;
 }
 header h1{
   font-size: 40px;
   margin:0px;
   padding:0px;
+  display: inline-block;
+}
+header #desc{
+  display: inline-block;
+  padding-left:1em;
 }
 
+#summary_wrapper{
+  display:grid;
+  grid-template-columns: 1fr 3.2fr;
+  border-bottom:2px solid #333;
+}
 #summary{
   padding:0 1rem 2rem;
-  border-bottom:2px solid #333;
 }
 #main{
   padding:0 1em;
@@ -134,7 +145,14 @@ svg .endpoint{
 }
 
 svg.group{
-  margin-bottom: 20px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 3px dotted var(--grid-color);
+}
+svg.group:last-of-type{
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
 }
 svg.group text.name{
   font-size: 16px;
@@ -245,15 +263,27 @@ footer img{
   }
 }
 
-
-@media (max-width: 800px) {
+@media (max-width: 1040px) {
   header h1{
-    font-size: 32px;
+    font-size: 26px;
   }
-  header {
-    padding-bottom:2em;
+}
+
+@media (max-width: 880px) {
+  body{
+    padding:0;
   }
 
+  header {
+    padding:0.2em 1em;
+  }
+
+  #summary_wrapper{
+    display: block;
+  }
+  #twmap{
+    display: none;
+  }
 
   div.reservoirs{
     grid-template-columns: 1fr
@@ -280,7 +310,11 @@ gtag('config', 'G-93370QFS9E');
 <h1>台灣水庫即時水情與歷年統計</h1>
 <p id="desc">資料更新中</p>
 </header>
+
 <div id="summary_wrapper">
+<div id="map">
+  <object id="twmap" type="image/svg+xml"></object>
+</div>
 <div id="summary">
   <div id="loading">
     <div class="lds"><div></div><div></div><div></div><div></div></div>
@@ -313,6 +347,36 @@ const reservoir_group = {
   "北部": ["翡翠水庫", "石門水庫", "寶山第二水庫", "新山水庫", "大埔水庫", "寶山水庫", "西勢水庫"],
   "中部": ["德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"],
   "南部": ["曾文水庫", "南化水庫", "烏山頭水庫", "牡丹水庫", "仁義潭水庫", "阿公店水庫", "白河水庫", "蘭潭水庫", "鳳山水庫", "澄清湖水庫", "鏡面水庫"],
+}
+
+// 位置是肉眼比對拉出來，不是很準
+const reservoir_locations = {
+    "翡翠水庫":[429,110],
+    "石門水庫":[343,138],
+    "寶山第二水庫":[281,163],
+    "新山水庫":[446,47],
+    "大埔水庫":[266,176],
+    "寶山水庫":[277,156.6],
+    "西勢水庫":[460,61],
+    "德基水庫":[313,295],
+    "日月潭水庫":[246,413],
+    "鯉魚潭水庫":[213,274],
+    "湖山水庫":[165,462],
+    "霧社水庫":[305,365],
+    "永和山水庫":[248,187],
+    "明德水庫":[234,201],
+    "石岡壩":[206,292],
+    "曾文水庫":[155,584],
+    "南化水庫":[144,635],
+    "烏山頭水庫":[101,600],
+    "牡丹水庫":[203,900],
+    "仁義潭水庫":[139,530],
+    "阿公店水庫":[97,715],
+    "白河水庫":[130,561],
+    "蘭潭水庫":[129,527],
+    "鳳山水庫":[104,796],
+    "澄清湖水庫":[95,758],
+    "鏡面水庫":[130,645],
 }
 
 function lineOver(e) {
@@ -350,7 +414,6 @@ function middleColor(c1, c2, pos) {
 
 function get_column_size() {
   const SIZE_DEF = [
-    [1000, 9],
     [880, 8],
     [760, 7],
     [640, 6],
@@ -367,15 +430,25 @@ function get_column_size() {
   return 8
 }
 
+
+function fillrateToColor(fill_rate) {
+  const FULL_RGB = [0, 160, 240]
+  const HALF_RGB = [202, 158, 46]
+  const DRY_RGB  = [240, 60, 0]
+  let color_str = 'rgba(0,160,240)'
+  if (fill_rate < 0.5) {
+    color_str = middleColor(DRY_RGB, HALF_RGB, (fill_rate) / 0.5)
+  } else if (fill_rate < 0.9) {
+    color_str = middleColor(HALF_RGB, FULL_RGB, (fill_rate - 0.5) / 0.4)
+  }
+  return color_str;
+}
+
 function groupChart(group_name, group_data) {
   const g_height = 120
   const g_width = 110
   const g_radius = 50
   const g_gap = 5
-
-  const FULL_RGB = [0, 160, 240]
-  const HALF_RGB = [202, 158, 46]
-  const DRY_RGB  = [240, 60, 0]
 
   const column_size = get_column_size()
 
@@ -396,12 +469,7 @@ function groupChart(group_name, group_data) {
 
     size = Math.pow(size, 0.5)
 
-    let color_str = 'rgba(0,160,240)'
-    if (fill_rate < 0.5) {
-      color_str = middleColor(DRY_RGB, HALF_RGB, (fill_rate) / 0.5)
-    } else if (fill_rate < 0.9) {
-      color_str = middleColor(HALF_RGB, FULL_RGB, (fill_rate - 0.5) / 0.4)
-    }
+    let color_str = fillrateToColor(fill_rate)
 
     const circle_outer = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     const outer_radius = size * g_radius
@@ -438,6 +506,34 @@ function groupChart(group_name, group_data) {
     const link_wrapper = document.createElementNS("http://www.w3.org/2000/svg", "a");
     link_wrapper.append(g)
     link_wrapper.href.baseVal = `#${name}`
+    link_wrapper.setAttribute('id', name)
+
+    // 游標指過去時，讓地圖上的圓點變大
+    link_wrapper.addEventListener('mouseover', () => {
+      const map = document.getElementById('twmap').contentDocument
+      if (!map) return
+
+      const reses = map.getElementById('reservoirs')
+
+      map.querySelectorAll('.active').forEach(ele => {
+        ele.classList.remove('active')
+      })
+
+      const res_circle = map.getElementById(name)
+      if (!res_circle) return
+
+      res_circle.classList.add('active')
+      res_circle.setAttribute('style', 'transition: all 0.5s')
+    })
+
+    link_wrapper.addEventListener('mouseout', () => {
+      const map = document.getElementById('twmap').contentDocument
+      if (!map) return
+
+      map.querySelectorAll('.active').forEach(ele => {
+        ele.classList.remove('active')
+      })
+    })
 
     return link_wrapper
   }
@@ -643,7 +739,6 @@ function redraw() {
     main.append(group_title)
     main.append(reservoirs)
 
-    summary.append(group_title.cloneNode(true))
     summary.append(group_chart)
   }
 
@@ -745,6 +840,33 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
     console.log(name)
     flash_chart(name)
   }
+})
+.then(() => {
+  // 載入地圖
+  const map = document.getElementById('twmap')
+  map.data = '/tw.svg'
+  map.addEventListener('load',  () => {
+    // 然後把水庫畫到地圖上
+    const reses = map.contentDocument.getElementById('reservoirs')
+    Object.keys(reservoir_locations).forEach(name => {
+      const [x, y] = reservoir_locations[name]
+      const res_circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+
+      const base_radius = 7
+      const radius = base_radius + Math.log(reservoir_capacity[name] / 1000) * 2
+
+      res_circle.setAttribute('cx', x)
+      res_circle.setAttribute('cy', y)
+      res_circle.setAttribute('r', radius)
+      res_circle.setAttribute('id', name)
+
+      if (reservoir_capacity[name]) {
+        const fill_rate = reservoir_current[name] / reservoir_capacity[name]
+        res_circle.setAttribute('fill', fillrateToColor(fill_rate))
+      }
+      reses.append(res_circle)
+    })
+  })
 })
 
 fetch(`/api/update-time?v=${parseInt(new Date().getTime()/3600000)}`)

@@ -55,6 +55,7 @@ def shutdown():
 @app.get("/github.svg")
 @app.get("/plurk.svg")
 @app.get("/robots.txt")
+@app.get("/tw.svg")
 async def static_file(request: Request):
     path = request.url.path
     if path == '/':
