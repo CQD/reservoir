@@ -17,6 +17,7 @@ app = FastAPI()
 TSV_CONTENT = Path('public/reservoir-history.tsv').read_text()
 TSV_SUPPLEMENTAL = ''
 TSV_LATEST = ''
+TSV_COMBINED = TSV_CONTENT
 
 UPDATE_TIME = last_date_str = TSV_CONTENT[-11:-1]
 UPDATE_INTERVAL = 3600
@@ -83,14 +84,13 @@ async def update_time():
 
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
-    result_tsv = TSV_CONTENT + TSV_SUPPLEMENTAL + TSV_LATEST
     cache_time = UPDATE_INTERVAL if TSV_LATEST else 30
     headers = {'Cache-Control': f'public, max-age={cache_time}'}
-    return PlainTextResponse(result_tsv, headers=headers)
+    return PlainTextResponse(TSV_COMBINED, headers=headers)
 
 
 def fetch_new_data():
-    global TSV_SUPPLEMENTAL, TSV_LATEST, UPDATE_TIME
+    global TSV_SUPPLEMENTAL, TSV_LATEST, TSV_COMBINED, UPDATE_TIME
 
     logger.info("[fetch_new_data] 開始")
 
@@ -117,6 +117,8 @@ def fetch_new_data():
     logger.warning("[fetch_new_data] 最新資料點已更新")
 
     UPDATE_TIME = now.strftime('%Y-%m-%d %H:%M:%S')
+    TSV_COMBINED = TSV_CONTENT + TSV_SUPPLEMENTAL + TSV_LATEST
+    logger.warning("[fetch_new_data] 資料更新完成")
 
 
 if __name__ == '__main__':
