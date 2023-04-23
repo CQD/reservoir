@@ -287,13 +287,7 @@ footer img{
   }
 
   #summary_wrapper{
-    display: block;
-  }
-  #twmap{
-    max-height:65vh;
-    max-width:90vw;
-    margin:0 auto 20px;
-    display: block;
+    grid-template-columns: 1fr 2.5fr;
   }
 
   svg.group:first-of-type{
@@ -307,6 +301,18 @@ footer img{
   }
   svg.group text.name{
     font-size:18px;
+  }
+}
+
+@media (max-width: 640px) {
+  #summary_wrapper{
+    display: block;
+  }
+  #twmap{
+    max-height:65vh;
+    max-width:90vw;
+    margin:0 auto 20px;
+    display: block;
   }
 }
 
