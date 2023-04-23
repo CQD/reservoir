@@ -122,7 +122,7 @@ class ReservoirCrawler:
 if __name__ == '__main__':
     tsv_file = "%s/../public/reservoir-history.tsv" % (os.path.dirname(__file__))
 
-    last_line = '2022-01-01\n'
+    last_line = '2011-12-31\n'
     with open(tsv_file, 'rb') as f:
         try:  # catch OSError in case of a one line file
             f.seek(-2, os.SEEK_END)
@@ -132,7 +132,7 @@ if __name__ == '__main__':
             f.seek(0)
         last_line = f.readline().decode()
 
-    last_date = last_line[-11:-1]
+    last_date = last_line[-11:-1] or '2011-12-31'
     yy, mm, dd = map(lambda val_str: int(val_str), last_date.split("-"))
     last_dt = date(yy, mm, dd)
 
