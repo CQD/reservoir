@@ -16,9 +16,15 @@ RESERVOIR_GROUPS = {
     "北部": {"翡翠水庫", "石門水庫", "寶山第二水庫", "新山水庫", "大埔水庫", "寶山水庫", "西勢水庫"},
     "中部": {"德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"},
     "南部": {"曾文水庫", "南化水庫", "烏山頭水庫", "牡丹水庫", "仁義潭水庫", "阿公店水庫", "白河水庫", "蘭潭水庫", "鳳山水庫", "澄清湖水庫", "鏡面水庫"},
+    "外離島": {"太湖水庫", "成功水庫"},
 }
 
-RESERVOIRS = {*RESERVOIR_GROUPS['北部'], *RESERVOIR_GROUPS['中部'], *RESERVOIR_GROUPS['南部']}
+RESERVOIRS = {
+    *RESERVOIR_GROUPS['北部'],
+    *RESERVOIR_GROUPS['中部'],
+    *RESERVOIR_GROUPS['南部'],
+    *RESERVOIR_GROUPS['外離島'],
+}
 
 
 class ReservoirCrawler:
@@ -122,7 +128,7 @@ class ReservoirCrawler:
 if __name__ == '__main__':
     tsv_file = "%s/../public/reservoir-history.tsv" % (os.path.dirname(__file__))
 
-    last_line = '2022-01-01\n'
+    last_line = '2011-12-31\n'
     with open(tsv_file, 'rb') as f:
         try:  # catch OSError in case of a one line file
             f.seek(-2, os.SEEK_END)
@@ -132,7 +138,7 @@ if __name__ == '__main__':
             f.seek(0)
         last_line = f.readline().decode()
 
-    last_date = last_line[-11:-1]
+    last_date = last_line[-11:-1] or '2011-12-31'
     yy, mm, dd = map(lambda val_str: int(val_str), last_date.split("-"))
     last_dt = date(yy, mm, dd)
 
