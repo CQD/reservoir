@@ -60,6 +60,11 @@ header #desc{
 #summary{
   padding:0 1rem 2rem;
 }
+
+#twmap{
+  margin-top:30px;
+}
+
 #main{
   padding:0 1em;
 }
@@ -453,7 +458,7 @@ function middleColor(c1, c2, pos) {
 
 function get_column_size() {
   const SIZE_DEF = [
-    [880, 8],
+    [880, 7],
     [760, 7],
     [640, 6],
     [520, 5],
@@ -483,16 +488,17 @@ function fillrateToColor(fill_rate) {
   return color_str;
 }
 
-function groupChart(group_name, group_data) {
+function groupChart(group_data) {
   const g_height = 120
   const g_width = 110
   const g_radius = 50
-  const g_gap = 5
+  const g_xgap = 5
+  const g_ygap = 10
 
   const column_size = get_column_size()
 
-  const width = (g_width * (column_size) + g_gap * (column_size - 1) + 10)
-  const height = (Math.ceil(group_data.length / column_size)) * g_height
+  const width = (g_width * (column_size) + g_xgap * (column_size - 1) + 10)
+  const height = (Math.ceil(group_data.length / column_size)) * (g_height + g_ygap) - g_ygap
 
   const group_radius = 130
   const item_radius = 80
@@ -530,7 +536,7 @@ function groupChart(group_name, group_data) {
     name_text.textContent = name
     name_text.classList.add('name')
     name_text.setAttribute('x', g_width / 2)
-    name_text.setAttribute('y', g_height - 3)
+    name_text.setAttribute('y', g_height - 5)
     g.append(name_text)
 
     const percent_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -577,19 +583,32 @@ function groupChart(group_name, group_data) {
     return link_wrapper
   }
 
-  const start_x = g_gap
+  const start_x = g_xgap
   let x = start_x
   let y = 0
   group_data.forEach(ele => {
     let g = makeG(ele.name, ele.max / capacity_max, ele.amount/ele.max)
     g.setAttribute('transform', `translate(${x}, ${y})`)
     svg.append(g)
-    x += g_width + g_gap
+    x += g_width + g_xgap
     if (x + g_width > width) {
-      y += g_height
+      y += g_height + g_ygap
       x = y >= (g_height * 2) ? 0 : start_x
     }
   })
+
+  const row_cnt = Math.ceil(group_data.length / column_size)
+  for (let i = 1; i < row_cnt; i++) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", 0)
+    line.setAttribute("y1", (g_height+g_ygap) * i - g_ygap / 2)
+    line.setAttribute("x2", width)
+    line.setAttribute("y2", (g_height+g_ygap) * i - g_ygap / 2)
+    line.setAttribute("stroke", "rgba(0,0,0,0.3)")
+    line.setAttribute("stroke-width", "2")
+    line.setAttribute("stroke-dasharray", "2,2")
+    svg.append(line)
+  }
 
   return svg
 }
@@ -726,6 +745,19 @@ function redraw() {
   const main = document.createElement('div')
   const summary = document.createElement('aside')
 
+  const all_reservoirs = []
+  Object.values(reservoir_group).forEach(reservoir_names => {
+    const group_data = reservoir_names.map(name => {return {
+        "name": name,
+        "amount": parseFloat(reservoir_current[name]),
+        "max": parseFloat(reservoir_capacity[name]),
+    }})
+    all_reservoirs.push(...group_data)
+  })
+  const group_chart = groupChart(all_reservoirs)
+  summary.append(group_chart)
+
+
   for (const [group_name, reservoir_names] of Object.entries(reservoir_group)) {
     const group_title = document.createElement("h2")
     group_title.textContent = group_name
@@ -738,7 +770,7 @@ function redraw() {
         "amount": parseFloat(reservoir_current[name]),
         "max": parseFloat(reservoir_capacity[name]),
     }})
-    const group_chart = groupChart(group_name, group_data)
+
 
     const reservoirs = document.createElement("div")
     reservoirs.classList.add('reservoirs')
@@ -778,7 +810,6 @@ function redraw() {
     main.append(group_title)
     main.append(reservoirs)
 
-    summary.append(group_chart)
   }
 
   document.getElementById('main').remove()
