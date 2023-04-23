@@ -145,14 +145,14 @@ svg .endpoint{
 }
 
 svg.group{
-  padding-bottom: 10px;
-  margin-bottom: 10px;
-  border-bottom: 3px dotted var(--grid-color);
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 3px dotted var(--grid-color);
 }
-svg.group:last-of-type{
-  border-bottom: 0;
-  padding-bottom: 0;
-  margin-bottom: 0;
+svg.group:first-of-type{
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
 }
 svg.group text.name{
   font-size: 16px;
@@ -294,6 +294,12 @@ footer img{
     max-width:90vw;
     margin:0 auto 20px;
     display: block;
+  }
+
+  svg.group:first-of-type{
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 3px dotted var(--grid-color);
   }
 
   div.reservoirs{
