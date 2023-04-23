@@ -330,7 +330,7 @@ gtag('config', 'G-93370QFS9E');
 
 <div id="summary_wrapper">
 <div id="map">
-  <object id="twmap" type="image/svg+xml"></object>
+  <object id="twmap" type="image/svg+xml" data="/tw.svg"></object>
 </div>
 <div id="summary">
   <div id="loading">
@@ -874,12 +874,20 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
   }
 })
 .then(() => {
-  // 載入地圖
   const map = document.getElementById('twmap')
-  map.data = '/tw.svg'
-  map.addEventListener('load',  () => {
-    // 然後把水庫畫到地圖上
-    const reses = map.contentDocument.getElementById('reservoirs')
+
+  // 畫地圖資料的 function，有些時候會呼叫多次
+  function mapDraw() {
+    const mapdoc = map.contentDocument
+    const reses = mapdoc ? mapdoc.getElementById('reservoirs') : null
+
+    // 如果 SVG 還沒載入，等載入完成重跑一次
+    if (!reses) {
+      map.addEventListener('load', mapDraw)
+      return
+    }
+
+    // 水庫
     Object.keys(reservoir_locations).forEach(name => {
       const [x, y] = reservoir_locations[name]
       const res_circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
@@ -899,7 +907,7 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
       reses.append(res_circle)
     })
 
-    // 然後畫水情燈號
+    // 水情燈號
     Object.keys(ALERTS).forEach(color => {
       ALERTS[color].forEach(region_name => {
         const region = map.contentDocument.getElementById(region_name)
@@ -908,7 +916,9 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
         }
       })
     })
-  })
+  }
+
+  mapDraw()
 })
 
 fetch(`/api/update-time?v=${parseInt(new Date().getTime()/3600000)}`)
