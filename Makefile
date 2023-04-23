@@ -15,7 +15,7 @@ shell: run
 build: venv/bin/activate
 
 server: build
-	. venv/bin/activate; uvicorn --port 9999  --reload main:app
+	. venv/bin/activate; python -m main
 
 deploy:
 	gcloud app deploy --project='reservoir-358117' --promote --stop-previous-version ${OPTIONS}
