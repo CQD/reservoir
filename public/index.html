@@ -459,7 +459,7 @@ function get_column_size() {
 function fillrateToColor(fill_rate) {
   const FULL_RGB = [0, 160, 240]
   const HALF_RGB = [202, 158, 46]
-  const DRY_RGB  = [240, 60, 0]
+  const DRY_RGB  = [255, 20, 0]
   let color_str = 'rgba(0,160,240)'
   if (fill_rate < 0.5) {
     color_str = middleColor(DRY_RGB, HALF_RGB, (fill_rate) / 0.5)
