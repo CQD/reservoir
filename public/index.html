@@ -177,7 +177,7 @@ svg.group text.percent{
   paint-order: stroke;
 }
 
-div.reservoirs{
+#main .reservoirs{
   margin-top:30px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -262,7 +262,7 @@ footer img{
 
 
 @media (max-width: 1200px) {
-  div.reservoirs{
+  #main .reservoirs{
     grid-template-columns: 1fr 1fr
   }
 }
@@ -300,9 +300,6 @@ footer img{
     border-top: 3px dotted var(--grid-color);
   }
 
-  div.reservoirs{
-    grid-template-columns: 1fr
-  }
   svg.group text.name{
     font-size:18px;
   }
@@ -317,6 +314,10 @@ footer img{
     max-width:90vw;
     margin:0 auto 20px;
     display: block;
+  }
+
+  #main .reservoirs{
+    grid-template-columns: 1fr
   }
 }
 
