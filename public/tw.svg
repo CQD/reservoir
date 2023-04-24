@@ -1,13 +1,28 @@
 <?xml version="1.0"?>
 <!-- 修改自 https://simplemaps.com/resources/svg-tw -->
-<svg viewBox="0 0 532 975" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 545 975" xmlns="http://www.w3.org/2000/svg">
 <style>
 circle{
   transition: all 0.3s;
+  paint-order:stroke;
 }
-.active{
-  stroke-width: 3;
-  r: 40px;
+circle.active{
+  stroke-width: 10;
+  r: 30px;
+}
+
+text {
+  paint-order:stroke;
+  transition: all 0.3s;
+  font-size:0px;
+  stroke-width: 7;
+  stroke:rgba(255,255,255,0);
+  fill:rgba(0,0,0,0);
+}
+text.active{
+  font-size:24px;
+  fill: rgba(0,0,0,0.9);
+  stroke: rgba(255,255,255,1);
 }
 
 </style>

@@ -489,6 +489,28 @@ function fillrateToColor(fill_rate) {
   return color_str;
 }
 
+
+function mapHighlighterMaker(name) {
+
+  const realfunc = () => {
+    const map = document.getElementById('twmap').contentDocument
+    if (!map) return
+
+    map.querySelectorAll('.active').forEach(ele => ele.classList.remove('active'))
+
+    if (!name) return
+
+    const res_circle = map.getElementById(name)
+    if (res_circle) res_circle.classList.add('active')
+
+    const res_text = map.getElementById(`${name}_text`)
+    if (res_text) res_text.classList.add('active')
+  }
+
+  return realfunc
+}
+
+
 function groupChart(group_data) {
   const g_height = 120
   const g_width = 110
@@ -555,31 +577,8 @@ function groupChart(group_data) {
     link_wrapper.setAttribute('id', name)
 
     // 游標指過去時，讓地圖上的圓點變大
-    link_wrapper.addEventListener('mouseover', () => {
-      const map = document.getElementById('twmap').contentDocument
-      if (!map) return
-
-      const reses = map.getElementById('reservoirs')
-
-      map.querySelectorAll('.active').forEach(ele => {
-        ele.classList.remove('active')
-      })
-
-      const res_circle = map.getElementById(name)
-      if (!res_circle) return
-
-      res_circle.classList.add('active')
-      res_circle.setAttribute('style', 'transition: all 0.5s')
-    })
-
-    link_wrapper.addEventListener('mouseout', () => {
-      const map = document.getElementById('twmap').contentDocument
-      if (!map) return
-
-      map.querySelectorAll('.active').forEach(ele => {
-        ele.classList.remove('active')
-      })
-    })
+    link_wrapper.addEventListener('mouseover', mapHighlighterMaker(name))
+    link_wrapper.addEventListener('mouseout', mapHighlighterMaker(null))
 
     return link_wrapper
   }
@@ -944,7 +943,20 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
         const fill_rate = reservoir_current[name] / reservoir_capacity[name]
         res_circle.setAttribute('fill', fillrateToColor(fill_rate))
       }
+
+      res_circle.addEventListener('mouseover', mapHighlighterMaker(name))
+      res_circle.addEventListener('mouseout', mapHighlighterMaker(null))
       reses.append(res_circle)
+    })
+
+    Object.keys(reservoir_locations).forEach(name => {
+      const [x, y] = reservoir_locations[name]
+      const res_text = document.createElementNS("http://www.w3.org/2000/svg", "text")
+      res_text.textContent = name
+      res_text.setAttribute('x', Math.min(x + 30, 430))
+      res_text.setAttribute('y', Math.max(y - 15, 30))
+      res_text.setAttribute('id', `${name}_text`)
+      reses.append(res_text)
     })
 
     // 水情燈號
