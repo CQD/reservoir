@@ -355,8 +355,7 @@ gtag('config', 'G-93370QFS9E');
 </div>
 
 <footer>
-<p>資料來源：經濟部水利署<a href="https://fhy.wra.gov.tw/fhyv2/monitor/reservoir">水庫蓄水統計表</a><br>
-資料時間：<span id="datatime">2022-12-08</span></p>
+<p>資料來源：經濟部水利署<a href="https://fhy.wra.gov.tw/fhyv2/monitor/reservoir">水庫蓄水統計表</a>
 
 <p><del>抄襲</del>參考了<a href="https://web.cw.com.tw/drought-2021/index.html">天下雜誌 2021 水情專題</a>的圖表<br>
 他們資料有時會很久沒更新，而其他人沒做歷史紀錄，只好自己做一份</p>
@@ -902,7 +901,6 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
   if (window.location.hash) {
     window.location = window.location
   }
-  document.getElementById('datatime').textContent = datatime
 })
 .then(smoothLink)
 .then(() => {
