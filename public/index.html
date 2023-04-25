@@ -921,7 +921,6 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
 .then(() => {
   if ( window.location.hash ) {
     const name = decodeURI(window.location.hash .replace('#', ''))
-    console.log(name)
     flash_chart(name)
   }
 })
