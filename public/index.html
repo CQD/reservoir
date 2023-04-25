@@ -869,6 +869,11 @@ function stddev(values){
   const mean = values.reduce((a, b) => a + b) / len
   return Math.sqrt(values.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / len)
 }
+
+function assetver() {
+  return `20230425${parseInt(new Date().getTime()/3600000)}`
+}
+
 </script>
 <script>
 let reservoir_history = {}
@@ -879,7 +884,7 @@ let datatime = '2022-12-08'
 
 function init(){
 
-fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
+fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
 .then(response => response.text())
 .then(tsv => {
   tsv.split("\n")
@@ -980,7 +985,7 @@ fetch(`/api/reservoir-history.tsv?v=${parseInt(new Date().getTime()/3600000)}`)
   mapDraw()
 })
 
-fetch(`/api/update-time?v=${parseInt(new Date().getTime()/3600000)}`)
+fetch(`/api/update-time?v=${assetver()}`)
 .then(response => response.text())
 .then(time => {
   const desc = document.getElementById('desc')
