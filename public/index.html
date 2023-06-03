@@ -961,8 +961,14 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
     Object.keys(reservoir_locations).forEach(name => {
       const [x, y] = reservoir_locations[name]
       const res_text = document.createElementNS("http://www.w3.org/2000/svg", "text")
-      res_text.textContent = name
-      res_text.setAttribute('x', Math.min(x + 30, 430))
+
+      let fill_rate = 0.0
+      if (reservoir_capacity[name]) {
+        fill_rate = reservoir_current[name] / reservoir_capacity[name]
+      }
+
+      res_text.textContent = `${name} ${(fill_rate*100).toFixed(1)}%`
+      res_text.setAttribute('x', Math.min(x + 30, 370))
       res_text.setAttribute('y', Math.max(y - 15, 30))
       res_text.setAttribute('id', `${name}_text`)
       reses.append(res_text)
