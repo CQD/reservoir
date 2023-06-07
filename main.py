@@ -100,8 +100,17 @@ def fetch_new_data():
     now = datetime.now(ZoneInfo("Asia/Taipei"))
     today_str = now.strftime('%Y-%m-%d')
 
+    crawed_data = crawer.fetch()
+    if not isinstance(crawed_data, dict):
+        logger.error("crawed_data is not a dict: %s", crawed_data)
+        return
+
+    if len(crawed_data) <= 0:
+        logger.info("crawed_data is empty")
+        return
+
     lines = [f"{name}\t{max}\t{curr}\t{today_str}\n"
-                for name, (max, curr) in crawer.fetch().items()]
+                for name, (max, curr) in crawed_data.items()]
     TSV_LATEST = "".join(lines)
     logger.warning("[fetch_new_data] 最新資料點已更新")
 
