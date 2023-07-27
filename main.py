@@ -2,6 +2,7 @@ from datetime import date, datetime
 import logging
 from pathlib import Path
 from threading import Timer
+import time
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, Request
@@ -19,7 +20,7 @@ TSV_SUPPLEMENTAL = ''
 TSV_LATEST = ''
 TSV_COMBINED = TSV_CONTENT
 
-UPDATE_TIME = last_date_str = TSV_CONTENT[-11:-1]
+UPDATE_TIME = f"{TSV_CONTENT[-11:-1]} 00:00:00"
 UPDATE_INTERVAL = 3600
 UPDATE_TIMER: Timer = None
 
@@ -66,7 +67,11 @@ async def static_file(request: Request):
 
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
-    cache_time = UPDATE_INTERVAL if TSV_LATEST else 30
+    now = time.time()
+    update_time_epoch = datetime.strptime(UPDATE_TIME, "%Y-%m-%d %H:%M:%S").timestamp()
+    cache_deadline = update_time_epoch + UPDATE_INTERVAL
+    cache_time = max(int(cache_deadline - now), 30)
+
     headers = {
         'Cache-Control': f'public, max-age={cache_time}',
         'x-update-time': UPDATE_TIME,
