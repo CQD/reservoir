@@ -30,23 +30,22 @@ UPDATE_TIMER: Timer = None
 def startup():
     global UPDATE_TIMER
 
-    Timer(1, fetch_new_data).start()
     logger.warning("[startup] 排定撈最新資料")
 
     def updater():
         logger.warning("[updater] 啟動")
+        interval = UPDATE_INTERVAL
         try:
             fetch_new_data()
-            UPDATE_TIMER = Timer(UPDATE_INTERVAL, updater)
-            UPDATE_TIMER.start()
-        except Exception as e:
-            logger.error("[updater] 更新資料時發生錯誤，稍後重試: %s", e)
-            UPDATE_TIMER = Timer(15, updater)
-            UPDATE_TIMER.start()
+        except:
+            logger.exception("[updater] 更新資料時發生錯誤")
+            interval = 15
 
-        logger.warning("[updater] 結束")
+        logger.warning("[updater] 結束，將於 %s 秒後再次執行", interval)
+        UPDATE_TIMER = Timer(interval, updater)
+        UPDATE_TIMER.start()
 
-    UPDATE_TIMER = Timer(UPDATE_INTERVAL, updater)
+    UPDATE_TIMER = Timer(1, updater)
     UPDATE_TIMER.start()
     logger.warning("[startup] 排定更新資料")
 
@@ -86,7 +85,7 @@ async def reservoir_history():
 def fetch_new_data():
     global TSV_SUPPLEMENTAL, TSV_LATEST, TSV_COMBINED, UPDATE_TIME
 
-    logger.info("[fetch_new_data] 開始")
+    logger.warning("[fetch_new_data] 開始")
 
     # 更新固定資料點的資料
     tsv = TSV_SUPPLEMENTAL if TSV_SUPPLEMENTAL else TSV_CONTENT
