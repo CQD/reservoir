@@ -14,13 +14,14 @@ from app.data import ReservoirCrawler
 logger = logging.getLogger(__name__)
 app = FastAPI()
 
+TPE_TIMEZONE = ZoneInfo("Asia/Taipei")
 
 TSV_CONTENT = Path('public/reservoir-history.tsv').read_text()
 TSV_SUPPLEMENTAL = ''
 TSV_LATEST = ''
 TSV_COMBINED = TSV_CONTENT
 
-UPDATE_TIME = f"{TSV_CONTENT[-11:-1]} 00:00:00"
+UPDATE_TIME = datetime.strptime(TSV_CONTENT[-11:-1], "%Y-%m-%d").timestamp()
 UPDATE_INTERVAL = 3600
 UPDATE_TIMER: Timer = None
 
@@ -68,13 +69,11 @@ async def static_file(request: Request):
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
     now = time.time()
-    update_time_epoch = datetime.strptime(UPDATE_TIME, "%Y-%m-%d %H:%M:%S").timestamp()
-    cache_deadline = update_time_epoch + UPDATE_INTERVAL
-    cache_time = max(int(cache_deadline - now), 30)
+    cache_time = max(int(UPDATE_TIME + UPDATE_INTERVAL - now), 30)
 
     headers = {
         'Cache-Control': f'public, max-age={cache_time}',
-        'x-update-time': UPDATE_TIME,
+        'x-update-time': datetime.fromtimestamp(UPDATE_TIME, tz=TPE_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S'),
     }
     return PlainTextResponse(TSV_COMBINED, headers=headers)
 
@@ -98,8 +97,7 @@ def fetch_new_data():
     logger.warning("[fetch_new_data] 固定資料點已更新")
 
     # 拉最新的資料
-    now = datetime.now(ZoneInfo("Asia/Taipei"))
-    today_str = now.strftime('%Y-%m-%d')
+    today_str = datetime.now(TPE_TIMEZONE).strftime('%Y-%m-%d')
 
     crawed_data = crawer.fetch()
     if not isinstance(crawed_data, dict):
@@ -115,7 +113,7 @@ def fetch_new_data():
     TSV_LATEST = "".join(lines)
     logger.warning("[fetch_new_data] 最新資料點已更新")
 
-    UPDATE_TIME = now.strftime('%Y-%m-%d %H:%M:%S')
+    UPDATE_TIME = time.time()
     TSV_COMBINED = TSV_CONTENT + TSV_SUPPLEMENTAL + TSV_LATEST
     logger.warning("[fetch_new_data] 資料更新完成")
 
