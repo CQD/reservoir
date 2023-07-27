@@ -877,7 +877,7 @@ function stddev(values){
 }
 
 function assetver() {
-  return `20230425${parseInt(new Date().getTime()/3600000)}`
+  return `20230727${parseInt(new Date().getTime()/3600000)}`
 }
 
 </script>
@@ -891,14 +891,16 @@ let datatime = '2022-12-08'
 function init(){
 
 fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
-.then(response => response.text())
+.then(response => {
+  datatime = response.headers.get('x-update-time') || datatime
+  return response.text()
+})
 .then(tsv => {
   tsv.split("\n")
   .forEach(line => {
     if (!line) return;
     let [reservoir, capacity, current, ymd] = line.split("\t")
     let year = ymd.split('-')[0]
-    datatime = (datatime < ymd) ? ymd : datatime
 
     // 做一筆假資料，讓 {year}-12-22 在圖上會連到 {year+1}-01-01
     if (`${year}-01-01` == ymd && year > 2012) {
@@ -915,6 +917,7 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
       reservoir_current[reservoir] = current
     }
   })
+  document.getElementById('desc').textContent = `資料更新時間：${datatime}`
 })
 .then(() => {
   redraw()
@@ -994,13 +997,6 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
   }
 
   mapDraw()
-})
-
-fetch(`/api/update-time?v=${assetver()}`)
-.then(response => response.text())
-.then(time => {
-  const desc = document.getElementById('desc')
-  desc.textContent = `資料更新時間：${time}`
 })
 
 }

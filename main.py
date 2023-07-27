@@ -74,7 +74,10 @@ async def update_time():
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
     cache_time = UPDATE_INTERVAL if TSV_LATEST else 30
-    headers = {'Cache-Control': f'public, max-age={cache_time}'}
+    headers = {
+        'Cache-Control': f'public, max-age={cache_time}',
+        'x-update-time': UPDATE_TIME,
+    }
     return PlainTextResponse(TSV_COMBINED, headers=headers)
 
 
