@@ -46,6 +46,10 @@ class ReservoirCrawler:
 
         self.form_inputs.clear()
         fields = document('form#aspnetForm input')
+
+        if len(fields) == 0:
+            raise RuntimeError("找不到 form#aspnetForm input")
+
         for field in fields.items():
             name = field.attr('name')
             value = field.attr('value')
@@ -56,8 +60,7 @@ class ReservoirCrawler:
         hf_query = parse_qs(hf_url.query)
 
         if '_TSM_CombinedScripts_' not in hf_query:
-            logger.error("_TSM_CombinedScripts_ 找不到，html: %s", html)
-            raise RuntimeError(f"_TSM_CombinedScripts_ 找不到，src 為：{script.attr('src')}")
+            raise RuntimeError(f"script src 裡面沒有 _TSM_CombinedScripts_。 src 為：{script.attr('src')}")
 
         self.form_inputs['ctl00_ctl02_HiddenField'] = hf_query['_TSM_CombinedScripts_'][0]
 
