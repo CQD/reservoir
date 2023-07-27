@@ -64,13 +64,6 @@ async def static_file(request: Request):
     return FileResponse(f'public{path}')
 
 
-@app.get("/api/update-time")
-async def update_time():
-    cache_time = UPDATE_INTERVAL if TSV_LATEST else 30
-    headers = {'Cache-Control': f'public, max-age={cache_time}'}
-    return PlainTextResponse(UPDATE_TIME, headers=headers)
-
-
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
     cache_time = UPDATE_INTERVAL if TSV_LATEST else 30
