@@ -54,6 +54,11 @@ class ReservoirCrawler:
         script = document('script[src*=_TSM_HiddenField_]')
         hf_url = urlparse(script.attr("src"))
         hf_query = parse_qs(hf_url.query)
+
+        if '_TSM_CombinedScripts_' not in hf_query:
+            logger.error("_TSM_CombinedScripts_ 找不到，html: %s", html)
+            raise RuntimeError(f"_TSM_CombinedScripts_ 找不到，src 為：{script.attr('src')}")
+
         self.form_inputs['ctl00_ctl02_HiddenField'] = hf_query['_TSM_CombinedScripts_'][0]
 
         logger.warning("成功撈取資料")
