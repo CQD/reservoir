@@ -35,10 +35,15 @@ def startup():
 
     def updater():
         logger.warning("[updater] 啟動")
-        fetch_new_data()
+        try:
+            fetch_new_data()
+            UPDATE_TIMER = Timer(UPDATE_INTERVAL, updater)
+            UPDATE_TIMER.start()
+        except Exception as e:
+            logger.error("[updater] 更新資料時發生錯誤，稍後重試: %s", e)
+            UPDATE_TIMER = Timer(15, updater)
+            UPDATE_TIMER.start()
 
-        UPDATE_TIMER = Timer(UPDATE_INTERVAL, updater)
-        UPDATE_TIMER.start()
         logger.warning("[updater] 結束")
 
     UPDATE_TIMER = Timer(UPDATE_INTERVAL, updater)
