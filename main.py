@@ -73,7 +73,7 @@ async def static_file(request: Request):
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
     now = time.time()
-    cache_time = max(int(UPDATE_TIME + UPDATE_INTERVAL - now), 30)
+    cache_time = max(int(UPDATE_TIME + UPDATE_INTERVAL - now), 0) + 30
 
     headers = {
         'Cache-Control': f'public, max-age={cache_time}',
