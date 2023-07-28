@@ -265,6 +265,30 @@ footer img{
   }
 }
 
+#link_to_top{
+  width:1.7em;
+  height:1.7em;
+  line-height: 1.7em;
+  font-weight: bold;
+  font-size:18px;
+  text-align: center;
+  display:block;
+  border-radius: 100%;
+  position:fixed;
+  bottom: 20px;
+  right:20px;
+  background-color: #3af;
+  color:#fff;
+  transition: all 0.3s;
+
+  opacity: 0;
+  transform: scale(0);
+}
+#link_to_top.show{
+  opacity: 1;
+  transform: scale(1);
+}
+
 
 @media (max-width: 1200px) {
   #main .reservoirs{
@@ -342,6 +366,7 @@ gtag('config', 'G-93370QFS9E');
 <body>
 
 <header>
+<a name="top"></a>
 <h1>台灣水庫即時水情與歷年統計</h1>
 <p id="desc">資料更新中</p>
 </header>
@@ -361,6 +386,7 @@ gtag('config', 'G-93370QFS9E');
 <div id="main"></div>
 </div>
 
+<a id="link_to_top" href="#top">⇧</a>
 <footer>
 <p>資料來源：經濟部水利署<a href="https://fhy.wra.gov.tw/fhyv2/monitor/reservoir">水庫蓄水統計表</a>與<a href="https://www.wra.gov.tw/EarlyWarning.aspx?n=18804&sms=9114">水情燈號</a>
 
@@ -1016,6 +1042,20 @@ window.addEventListener('resize', (e) => {
     column_size = new_column_size
   }
 })
+
+// 往下捲則顯示回到頂端的按鈕
+const link_to_top = document.getElementById('link_to_top')
+let show_link_to_top = false
+window.addEventListener("scroll", (event) => {
+  const boundry = 100
+  if (window.scrollY > boundry && !show_link_to_top) {
+    link_to_top.classList.add('show')
+    show_link_to_top = true
+  } else if (window.scrollY < boundry && show_link_to_top) {
+    link_to_top.classList.remove('show')
+    show_link_to_top = false
+  }
+});
 
 // 看板模式，每小時更新資料
 setInterval(init, 3600000)
