@@ -588,7 +588,6 @@ function groupChart(group_data) {
     const link_wrapper = document.createElementNS("http://www.w3.org/2000/svg", "a");
     link_wrapper.append(g)
     link_wrapper.href.baseVal = `#${name}`
-    link_wrapper.setAttribute('id', name)
 
     // 游標指過去時，讓地圖上的圓點變大
     link_wrapper.addEventListener('mouseover', mapHighlighterMaker(name))
