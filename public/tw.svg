@@ -19,8 +19,16 @@ text {
   stroke:rgba(255,255,255,0);
   fill:rgba(0,0,0,0);
 }
+
+text.large{
+  font-size:20px;
+  stroke-width: 5;
+  fill: rgba(0,0,0,0.7);
+  stroke: rgba(255,255,255,1);
+}
+
 text.active{
-  font-size:24px;
+  font-size:26px;
   fill: rgba(0,0,0,0.9);
   stroke: rgba(255,255,255,1);
 }

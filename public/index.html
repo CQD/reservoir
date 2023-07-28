@@ -1003,11 +1003,31 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
         fill_rate = reservoir_current[name] / reservoir_capacity[name]
       }
 
+      let x_offset = 30
+      let y_offset = -15
+
+      if ("石門水庫" == name) {
+        x_offset = -100
+        y_offset = -20
+      }
+      if ("翡翠水庫" == name) {
+        y_offset = -25
+      }
+      if ("日月潭水庫" == name) {
+        x_offset = 15
+        y_offset = -5
+      }
+
       res_text.textContent = `${name} ${(fill_rate*100).toFixed(1)}%`
-      res_text.setAttribute('x', Math.min(x + 30, 370))
-      res_text.setAttribute('y', Math.max(y - 15, 30))
+      res_text.setAttribute('x', Math.min(x + x_offset, 370))
+      res_text.setAttribute('y', Math.max(y + y_offset, 30))
       res_text.setAttribute('id', `${name}_text`)
       reses.append(res_text)
+
+      if (["翡翠水庫", "石門水庫", "德基水庫", "日月潭水庫", "曾文水庫"].includes(name)) {
+        res_text.classList.add('large')
+      }
+
     })
 
     // 水情燈號
