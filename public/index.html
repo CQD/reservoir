@@ -918,9 +918,11 @@ let reservoir_capacity = {}
 
 let datatime = '2022-12-08'
 
-function init(){
+let init_serial = 0
 
-fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
+function init(){
+init_serial += 1
+fetch(`/api/reservoir-history.tsv?v=${assetver()}${init_serial}`)
 .then(response => {
   datatime = response.headers.get('x-update-time') || datatime
   return response.text()
