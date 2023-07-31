@@ -466,11 +466,6 @@ ALERTS = {
   "hsl(90, 80%, 75%)": [],
 }
 
-// 高雄 2023-07-31 起水情燈號改為正常
-if ((new Date()) < new Date("2023-07-31T00:00:00+08:00")) {
-  ALERTS["hsl(90, 80%, 75%)"].push("高雄市")
-}
-
 function lineOver(e) {
   let year = e.target.dataset['year']
   if (e.target.classList.contains('thisyear')) {
