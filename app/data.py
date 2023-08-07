@@ -39,7 +39,11 @@ class ReservoirCrawler:
 
         payload = self.form_inputs | payload
 
-        resp = requests.post(self.url, data=payload)
+        resp = requests.post(self.url, data=payload, headers={
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Referer": "https://fhy.wra.gov.tw/ReservoirPage_2011/StorageCapacity.aspx",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+        })
         html = resp.text
 
         document = pq(html)
