@@ -12,6 +12,7 @@ circle.active{
 }
 
 text {
+  font-family: sans-serif;
   paint-order:stroke;
   transition: all 0.3s;
   font-size:0px;
