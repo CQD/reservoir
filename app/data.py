@@ -52,6 +52,9 @@ class ReservoirCrawler:
         fields = document('form#aspnetForm input')
 
         if len(fields) == 0:
+            logger.error("resp.status_code: %s", resp.status_code)
+            logger.error("resp.headers: %s", resp.headers)
+            logger.error("resp.text: %s", html)
             raise RuntimeError("找不到 form#aspnetForm input")
 
         for field in fields.items():
