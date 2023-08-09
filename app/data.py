@@ -75,7 +75,9 @@ class ReservoirCrawler:
         return document
 
 
-    def fetch(self, date: datetime=datetime.now(ZoneInfo("Asia/Taipei"))):
+    def fetch(self, date: Optional[datetime]=None):
+        date = date if date else datetime.now(ZoneInfo("Asia/Taipei"))
+
         # init form data
         if not self.form_inputs:
             self.fetch_page()
