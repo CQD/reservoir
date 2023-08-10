@@ -38,12 +38,11 @@ body > *{
 header{
   max-width: 100%;
   margin:0 -10px;
-  padding:0.4em min(15vw,100px) 0.4em;
+  padding:0.4em min(15vw,100px) 0;
   background-color: #03a;
   background-size:75px 100px;
   text-align: center;
   color:#ddd;
-  margin-bottom:1em;
 }
 header h1{
   font-size: 40px;
@@ -358,6 +357,43 @@ footer img{
   }
 }
 
+#wave {
+  margin:0 -10px;
+  height: 20px;
+  overflow-x: hidden;
+  height:12px;
+  margin-bottom:1em;
+  position: relative;
+}
+
+.wave {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 56'%3E%3Cpath d='M800 56.9c-155.5 0-204.9-50-405.5-49.9-200 0-250 49.9-394.5 49.9v-56.9h800v56.9z' fill='%230033aa'/%3E%3C/svg%3E");
+  position: absolute;
+  left:0;
+  width: 200%;
+  height: 100%;
+  animation: wave 47s -1s linear infinite;
+  transform: translate3d(0, 0, 0);
+  opacity: 0.8;
+}
+
+.wave:nth-of-type(2) {
+  bottom: 0;
+  animation: wave 57s linear reverse infinite;
+  opacity: 0.5;
+}
+
+.wave:nth-of-type(3) {
+  bottom: 0;
+  animation: wave 91s -10s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes wave {
+    0% {transform: translateX(0%);}
+    100% {transform: translateX(-50%);}
+}
+
 </style>
 
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-93370QFS9E"></script>
@@ -376,6 +412,12 @@ gtag('config', 'G-93370QFS9E');
 <h1>台灣水庫即時水情與歷年統計</h1>
 <p id="desc">資料更新中</p>
 </header>
+
+<div id="wave">
+  <div class="wave"></div>
+  <div class="wave"></div>
+  <div class="wave"></div>
+</div>
 
 <div id="summary_wrapper">
 <div id="map">
@@ -525,7 +567,7 @@ function get_column_size() {
 
 
 function fillrateToColor(fill_rate) {
-  const FULL_RGB = [0, 160, 240]
+  const FULL_RGB = [0, 160, 255]
   const HALF_RGB = [202, 158, 46]
   const DRY_RGB  = [255, 20, 0]
   let color_str = 'rgba(0,160,240)'
@@ -533,6 +575,8 @@ function fillrateToColor(fill_rate) {
     color_str = middleColor(DRY_RGB, HALF_RGB, (fill_rate) / 0.5)
   } else if (fill_rate < 0.9) {
     color_str = middleColor(HALF_RGB, FULL_RGB, (fill_rate - 0.5) / 0.4)
+  } else {
+    color_str = middleColor(FULL_RGB, FULL_RGB, 0.5)
   }
   return color_str;
 }
