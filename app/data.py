@@ -75,17 +75,18 @@ class ReservoirCrawler:
         return document
 
 
-    def fetch(self, date: Optional[datetime]=None):
-        date = date if date else datetime.now(ZoneInfo("Asia/Taipei"))
+    def fetch(self, date: Optional[datetime]=None, depth: int=0):
+        today = date if date else datetime.now(ZoneInfo("Asia/Taipei"))
 
         # init form data
         if not self.form_inputs:
             self.fetch_page()
 
+        # 拉指定日期的資料
         payload = {
-            'ctl00$cphMain$ucDate$cboYear': str(date.year),
-            'ctl00$cphMain$ucDate$cboMonth': str(date.month),
-            'ctl00$cphMain$ucDate$cboDay': str(date.day),
+            'ctl00$cphMain$ucDate$cboYear': str(today.year),
+            'ctl00$cphMain$ucDate$cboMonth': str(today.month),
+            'ctl00$cphMain$ucDate$cboDay': str(today.day),
             'ctl00$cphMain$cboSearch': '所有水庫',
 
             'ctl00$ctl02': "ctl00$cphMain$ctl00|ctl00$cphMain$btnQuery",
@@ -94,6 +95,7 @@ class ReservoirCrawler:
         document = self.fetch_page(payload)
         trs = document('#ctl00_cphMain_gvList tr')
 
+        # 把拉到的資料中有值的水庫抓出來
         result: Dict[str, Tuple[float, float]] = {}
 
         def floater(ele: HtmlElement):
@@ -117,6 +119,15 @@ class ReservoirCrawler:
                 continue
 
             result[name] = (capacity, current)
+
+        # 數量不夠，有的今天還沒更新，拉昨天的資料
+        if len(result) < len(RESERVOIRS) and depth < 3:
+            yesterday = today - timedelta(days=1)
+            logger.warning(" %s 的資料數量不夠，拉 %s 的資料", today.date(), yesterday.date())
+            prev_result = self.fetch(yesterday, depth + 1)
+            for name, (capacity, current) in prev_result.items():
+                if name not in result:
+                    result[name] = (capacity, current)
 
         return result
 
