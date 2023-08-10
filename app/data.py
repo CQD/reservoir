@@ -75,8 +75,8 @@ class ReservoirCrawler:
         return document
 
 
-    def fetch(self, date: Optional[datetime]=None, depth: int=0):
-        today = date if date else datetime.now(ZoneInfo("Asia/Taipei"))
+    def fetch(self, date: Optional[date]=None):
+        today = date if date else datetime.now(ZoneInfo("Asia/Taipei")).date()
 
         # init form data
         if not self.form_inputs:
@@ -121,10 +121,10 @@ class ReservoirCrawler:
             result[name] = (capacity, current)
 
         # 數量不夠，有的今天還沒更新，拉昨天的資料
-        if len(result) < len(RESERVOIRS) and depth < 3:
+        if len(result) < len(RESERVOIRS) and date is None:
             yesterday = today - timedelta(days=1)
-            logger.warning(" %s 的資料數量不夠，拉 %s 的資料", today.date(), yesterday.date())
-            prev_result = self.fetch(yesterday, depth + 1)
+            logger.warning(" %s 的資料數量不夠，拉 %s 的資料", today, yesterday)
+            prev_result = self.fetch(yesterday)
             for name, (capacity, current) in prev_result.items():
                 if name not in result:
                     result[name] = (capacity, current)
@@ -132,7 +132,7 @@ class ReservoirCrawler:
         return result
 
 
-    def fetch_uppdated_as_tsv(self, last_date: datetime=None, offset:int=1):
+    def fetch_uppdated_as_tsv(self, last_date: date=None, offset:int=1):
         boundry_date = datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=offset)
 
         lines = []
