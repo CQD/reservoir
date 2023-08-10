@@ -105,9 +105,6 @@ def fetch_new_data():
     today_str = datetime.now(TPE_TIMEZONE).strftime('%Y-%m-%d')
 
     crawed_data = crawer.fetch()
-    if not isinstance(crawed_data, dict):
-        logger.error("crawed_data is not a dict: %s", crawed_data)
-        return
 
     if len(crawed_data) <= 0:
         logger.info("crawed_data is empty")
