@@ -13,7 +13,6 @@ from app.data import ReservoirCrawler
 
 
 logger = logging.getLogger(__name__)
-app = FastAPI()
 
 TPE_TIMEZONE = ZoneInfo("Asia/Taipei")
 
@@ -27,8 +26,7 @@ UPDATE_INTERVAL = 3600
 UPDATE_TIMER: Timer = None
 
 
-@app.on_event("startup")
-def startup():
+def livespan(app: FastAPI):
     global UPDATE_TIMER
 
     logger.warning("[startup] 排定撈最新資料")
@@ -50,11 +48,13 @@ def startup():
     UPDATE_TIMER.start()
     logger.warning("[startup] 排定更新資料")
 
+    yield
 
-@app.on_event("shutdown")
-def shutdown():
     UPDATE_TIMER.cancel()
     logger.warning("[shutdown] 已關閉 updater")
+
+
+app = FastAPI(lifespan=livespan)
 
 
 @app.get("/")
