@@ -98,6 +98,26 @@ a:link, a:visited{
   background-color: rgba(255,255,128,0.8);
 }
 
+#chart_switch{
+  display: flex;
+  justify-content: center;
+  gap: 1em;
+  margin: 10px 0;
+}
+
+#chart_switch div{
+  padding: 0.3em 0.7em;
+  border-radius: 1em;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  transition: all 0.5s;
+}
+#chart_switch div.active {
+  background-color: #3af;
+  color: #fff;
+}
+
 svg polyline{
   transition: all 0.17s;
   stroke:var(--grid-color);
@@ -432,6 +452,10 @@ gtag('config', 'G-93370QFS9E');
 </div>
 
 <div id="main_wrapper">
+<aside id="chart_switch">
+  <div id="use_line_chart" class="active">折線圖</div>
+  <div id="use_heatmap">熱度圖</div>
+</aside>
 <div id="main"></div>
 </div>
 
@@ -574,12 +598,14 @@ function get_column_size() {
 }
 
 
-function fillrateToColor(fill_rate) {
-  const FULL_RGB = [0, 160, 255]
-  const HALF_RGB = [202, 158, 46]
-  const DRY_RGB  = [255, 20, 0]
+function fillrateToColor(fill_rate, full_rgb, half_rgb, dry_rgb) {
+  const FULL_RGB = full_rgb || [0, 160, 255];
+  const HALF_RGB = half_rgb || [202, 158, 46];
+  const DRY_RGB  = dry_rgb  || [255, 20, 0];
   let color_str = 'rgba(0,160,240)'
-  if (fill_rate < 0.5) {
+  if (fill_rate <= 0) {
+    color_str = 'rgb(200,200,200)'
+  } else if (fill_rate < 0.5) {
     color_str = middleColor(DRY_RGB, HALF_RGB, (fill_rate) / 0.5)
   } else if (fill_rate < 0.9) {
     color_str = middleColor(HALF_RGB, FULL_RGB, (fill_rate - 0.5) / 0.4)
@@ -587,6 +613,15 @@ function fillrateToColor(fill_rate) {
     color_str = middleColor(FULL_RGB, FULL_RGB, 0.5)
   }
   return color_str;
+}
+
+function heatmapColor(fill_rate){
+  return fillrateToColor(
+    fill_rate,
+    [61, 155, 201],
+    [255, 253, 202],
+    [222, 86, 97],
+  )
 }
 
 
@@ -712,7 +747,7 @@ function groupChart(group_data) {
   return svg
 }
 
-function reservoirChart(data, max) {
+function reservoirLineChart(data, max) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   const width = window.innerWidth > 800 ? 500 : 350
   const height = window.innerWidth > 800 ? 180 : 140
@@ -840,9 +875,126 @@ function reservoirChart(data, max) {
   return svg
 }
 
+function reservoirHeatmapChart(data, max) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const width = window.innerWidth > 800 ? 500 : 350
+  const height = window.innerWidth > 800 ? 180 : 140
+
+  const chart_bottom = height - 16
+  const thisyear = new Date().getFullYear()
+
+  svg.classList.add('reservoir')
+  svg.classList.add('heatmap')
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
+
+  const year_cnt = Object.keys(data).length
+  const year_height = chart_bottom / year_cnt
+
+  const entries = Object.entries(data)
+
+  let year_idx = 0;
+  for (const [year, dates] of entries) {
+    year_idx += 1;
+
+    const year_y = year_height * (year_idx - 1);
+    const year_day = 366;
+    const year_start = new Date(year, 1, 1);
+    let last_date = new Date(year - 1, 12, 22);
+    let last_amount = 0;
+    for (let [ymd, amount] of Object.entries(dates)) {
+      const cell = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      amount = amount <= 0 ? last_amount : amount;
+      last_amount = amount;
+
+      const percentage = Math.min(amount / max, 1);
+      const [yy, mm, dd] = ymd.split('-');
+      const dt = new Date(yy, mm, dd);
+      const day_of_year = Math.floor((dt - year_start) / (86400 * 1000));
+      const day_of_year_last_date = Math.floor((last_date - year_start) / (86400 * 1000));
+      const day_to_last_date = Math.floor((dt - last_date) / (86400 * 1000));
+
+      let cell_width = width * (day_to_last_date / year_day);
+      const x = width * day_of_year_last_date / year_day + 8;
+
+      cell.setAttribute('x', x);
+      cell.setAttribute('y', year_y);
+      cell.setAttribute('width', cell_width);
+      cell.setAttribute('height', year_height);
+
+      if (["03", "05", "07", "08", "10", "12"].includes(mm) && dd == "01") {
+        // cell.setAttribute('x', x - 2);
+        // cell.setAttribute('width', width * (11 / year_day));
+      }
+
+      cell.setAttribute('fill', heatmapColor(percentage));
+      svg.append(cell)
+
+      last_date = dt;
+    }
+
+    if (year == thisyear || year_idx == 1) {
+      const year_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      year_text.textContent = year;
+      year_text.setAttribute("x", 20);
+      year_text.setAttribute("y", year_y + 10 )
+      svg.append(year_text)
+    }
+  }
+
+  // grid
+  const grid_points = [
+    [5, 0],
+    [0, 0],
+    [0, chart_bottom],
+    [width, chart_bottom],
+    [width, 0],
+    [width - 5, 0],
+  ].map((ele) => {
+    return [
+      ele[0] > (width/2) ? ele[0] - 1 : ele[0] + 1,
+      ele[1] > (height/2) ? ele[1] - 1 : ele[1] + 1,
+    ]
+  })
+
+  const grid_line = document.createElementNS("http://www.w3.org/2000/svg", "polyline")
+  grid_line.setAttribute('points', grid_points.join(" "))
+  grid_line.classList.add('grid')
+  svg.append(grid_line);
+
+  // month annotation
+  [
+    [31, '二月'],
+    [90, '四月'],
+    [151, '六月'],
+    [212, '八月'],
+    [273, '十月'],
+    [334, '十二月'],
+  ].forEach(p => {
+    const [day, name] = p
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text")
+    const x = width * day / 365
+    text.setAttribute("x", x)
+    text.setAttribute("y", height - 4)
+    text.textContent = name
+    svg.append(text)
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line")
+    line.setAttribute("x1", x)
+    line.setAttribute("y1", chart_bottom - 5)
+    line.setAttribute("x2", x)
+    line.setAttribute("y2", chart_bottom)
+    line.classList.add("grid")
+    svg.append(line)
+  });
+
+  return svg
+}
+
 function redraw() {
   const main = document.createElement('div')
   const summary = document.createElement('aside')
+  const chart_switch = document.getElementById('chart_switch')
+  chart_switch.style = "display:hidden";
 
   const all_reservoirs = []
   Object.values(reservoir_group).forEach(reservoir_names => {
@@ -901,6 +1053,7 @@ function redraw() {
       desc.innerHTML = `（目前蓄水量 ${reservoir_current[name]} 萬立方公尺）`
       content.append(desc)
 
+      const reservoirChart = window.reservoirChartFunc || reservoirLineChart;
       content.append(reservoirChart(data, reservoir_capacity[name]))
       reservoirs.append(content)
     }
@@ -918,6 +1071,8 @@ function redraw() {
   document.getElementById('summary').remove()
   summary.setAttribute('id', 'summary')
   document.getElementById('summary_wrapper').append(summary)
+
+  chart_switch.style = "";
 }
 
 function flash_chart(name) {
@@ -1137,6 +1292,23 @@ window.addEventListener("scroll", (event) => {
     link_to_top.classList.remove('show')
     show_link_to_top = false
   }
+});
+
+// 設定切換圖表的按鈕
+document.getElementById('use_line_chart').addEventListener('click', (e) => {
+  window.reservoirChartFunc = reservoirLineChart;
+  document.getElementById('chart_switch').querySelectorAll('.active').forEach(ele => ele.classList.remove('active'));
+  e.target.classList.add('active');
+  redraw();
+  smoothLink();
+});
+
+document.getElementById('use_heatmap').addEventListener('click', (e) => {
+  window.reservoirChartFunc = reservoirHeatmapChart
+  document.getElementById('chart_switch').querySelectorAll('.active').forEach(ele => ele.classList.remove('active'));
+  e.target.classList.add('active');
+  redraw();
+  smoothLink();
 });
 
 // 看板模式，每小時更新資料
