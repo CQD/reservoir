@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <title>台灣水庫即時水情與歷年統計</title>
-<meta name="description" content="提供台灣水庫的即時水情狀況、水情燈號、以及 2012 年之後的水庫水位歷史圖表">
+<meta name="description" content="提供台灣水庫的即時水情狀況、水情燈號、以及 2004 年之後的水庫水位歷史圖表">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=1">
 <link rel="icon" type="image/png" href="favicon.png" >
 <meta name="theme-color" content="#03a">
 <meta property="og:title" content="台灣水庫即時水情與歷年統計">
-<meta property="og:description" content="2012-01-01 至今台灣各大水庫蓄水量統計">
+<meta property="og:description" content="2004-01-01 至今台灣各大水庫蓄水量統計">
 <meta property="og:image" content="https://reservoir.cqd.tw/og.png">
 <link rel="canonical" href="https://reservoir.cqd.tw/">
 <style>
@@ -931,15 +931,17 @@ function reservoirHeatmapChart(data, max) {
 
       last_date = dt;
     }
+  }
 
-    if (year == thisyear || year_idx == 1) {
+  const first_year = parseInt(entries[0][0])
+  for (const [year, y] of [[thisyear, height - 16 - 2], [first_year, 10]]) {
       const year_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
       year_text.textContent = year;
       year_text.setAttribute("x", 20);
-      year_text.setAttribute("y", year_y + 10 )
+      year_text.setAttribute("y", y)
       svg.append(year_text)
     }
-  }
+
 
   // grid
   const grid_points = [
@@ -1117,7 +1119,7 @@ function stddev(values){
 }
 
 function assetver() {
-  return `20230727${parseInt(new Date().getTime()/3600000)}`
+  return `20240610${parseInt(new Date().getTime()/3600000)}`
 }
 
 </script>
@@ -1145,7 +1147,7 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}${init_serial}`)
     let year = ymd.split('-')[0]
 
     // 做一筆假資料，讓 {year}-12-22 在圖上會連到 {year+1}-01-01
-    if (`${year}-01-01` == ymd && year > 2012) {
+    if (`${year}-01-01` == ymd && year > 2004) {
       let prev_ymd = `${year-1}-12-31`
       reservoir_history[reservoir][year-1][prev_ymd] = current
     }
