@@ -98,6 +98,10 @@ a:link, a:visited{
   background-color: rgba(255,255,128,0.8);
 }
 
+.hidden{
+  display: none !important;
+}
+
 #chart_switch{
   display: flex;
   justify-content: center;
@@ -111,7 +115,7 @@ a:link, a:visited{
   cursor: pointer;
   font-weight: bold;
   transition: background-color 0.3s;
-  transition: all 0.5s;
+  transition: all 0.35s;
 }
 #chart_switch div.active {
   background-color: #3af;
@@ -452,7 +456,7 @@ gtag('config', 'G-93370QFS9E');
 </div>
 
 <div id="main_wrapper">
-<aside id="chart_switch">
+<aside id="chart_switch" class="hidden">
   <div id="use_line_chart" class="active">折線圖</div>
   <div id="use_heatmap">熱度圖</div>
 </aside>
@@ -1009,7 +1013,8 @@ function redraw() {
   const main = document.createElement('div')
   const summary = document.createElement('aside')
   const chart_switch = document.getElementById('chart_switch')
-  chart_switch.style = "display:hidden";
+
+  chart_switch.classList.add('hidden');
 
   const all_reservoirs = []
   Object.values(reservoir_group).forEach(reservoir_names => {
@@ -1087,7 +1092,7 @@ function redraw() {
   summary.setAttribute('id', 'summary')
   document.getElementById('summary_wrapper').append(summary)
 
-  chart_switch.style = "";
+  chart_switch.classList.remove('hidden');
 }
 
 function flash_chart(name) {
