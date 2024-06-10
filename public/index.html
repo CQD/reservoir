@@ -921,11 +921,6 @@ function reservoirHeatmapChart(data, max) {
       cell.setAttribute('width', cell_width);
       cell.setAttribute('height', year_height);
 
-      if (["03", "05", "07", "08", "10", "12"].includes(mm) && dd == "01") {
-        // cell.setAttribute('x', x - 2);
-        // cell.setAttribute('width', width * (11 / year_day));
-      }
-
       cell.setAttribute('fill', heatmapColor(percentage));
       svg.append(cell)
 
