@@ -38,7 +38,7 @@ def livespan(app: FastAPI):
             fetch_new_data()
         except:
             logger.exception("[updater] 更新資料時發生錯誤")
-            interval = 15
+            interval = 1000
 
         logger.warning("[updater] 結束，將於 %s 秒後再次執行", interval)
         UPDATE_TIMER = Timer(interval, updater)
