@@ -457,7 +457,7 @@ gtag('config', 'G-93370QFS9E');
 
 <div id="main_wrapper">
 <aside id="chart_switch" class="hidden">
-  <div id="use_line_chart" class="active">折線圖</div>
+  <div id="use_line_chart">折線圖</div>
   <div id="use_heatmap">熱度圖</div>
 </aside>
 <div id="main"></div>
@@ -550,6 +550,32 @@ ALERTS = {
     "新竹縣",
     "桃園市",
   ],
+}
+
+function setCookie(name, value, days) {
+    const cookie_values = {};
+    cookie_values[name] = value;
+    cookie_values["path"] = "/";
+    cookie_values["SameSite"] = "None";
+
+    days = days || 3600;
+    const expore_date = new Date();
+    expore_date.setTime(expore_date.getTime() + (days*24*60*60*1000));
+    cookie_values["expires"] = expore_date.toUTCString();
+
+    const cookie_str = Object.entries(cookie_values).map(([k, v]) => `${k}=${v}`).join("; ");
+    console.log("setting cookie:", cookie_str)
+    document.cookie = cookie_str + "; Secure";
+}
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
 }
 
 function lineOver(e) {
@@ -1283,9 +1309,6 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}${init_serial}`)
 
 }
 
-// 拉資料並開始繪製圖表（非同步）
-init()
-
 // 游標 highlight 過去年份的線圖
 document.body.addEventListener('click', () => highlight_year(''))
 
@@ -1315,21 +1338,31 @@ window.addEventListener("scroll", (event) => {
 });
 
 // 設定切換圖表的按鈕
-document.getElementById('use_line_chart').addEventListener('click', (e) => {
-  window.reservoirChartFunc = reservoirLineChart;
-  document.getElementById('chart_switch').querySelectorAll('.active').forEach(ele => ele.classList.remove('active'));
-  e.target.classList.add('active');
-  redraw();
-  smoothLink();
-});
+const chart_type_defs = {
+  'line_chart': reservoirLineChart,
+  'heatmap': reservoirHeatmapChart,
+}
 
-document.getElementById('use_heatmap').addEventListener('click', (e) => {
-  window.reservoirChartFunc = reservoirHeatmapChart
-  document.getElementById('chart_switch').querySelectorAll('.active').forEach(ele => ele.classList.remove('active'));
-  e.target.classList.add('active');
-  redraw();
-  smoothLink();
-});
+for (const [type, func] of Object.entries(chart_type_defs)) {
+  const ele_id = `use_${type}`
+  document.getElementById(ele_id).addEventListener('click', (e) => {
+    window.reservoirChartFunc = func;
+    document.getElementById('chart_switch').querySelectorAll('.active').forEach(ele => ele.classList.remove('active'));
+    e.target.classList.add('active');
+    redraw();
+    smoothLink();
+
+    setCookie('chart_type', type)
+  });
+}
+
+const chart_type = getCookie('chart_type') || 'line_chart';
+window.reservoirChartFunc = chart_type_defs[chart_type] || reservoirLineChart;
+document.getElementById(`use_${chart_type}`).classList.add('active');
+
+
+// 拉資料並開始繪製圖表（非同步）
+init()
 
 // 看板模式，每小時更新資料
 setInterval(init, 3600000)
