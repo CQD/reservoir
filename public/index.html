@@ -479,6 +479,8 @@ gtag('config', 'G-93370QFS9E');
 
 </footer>
 <script>
+const START_YEAR = 2004;
+
 const reservoir_group = {
   "北部": ["翡翠水庫", "石門水庫", "寶山第二水庫", "新山水庫", "大埔水庫", "寶山水庫", "西勢水庫"],
   "中部": ["德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"],
@@ -887,16 +889,15 @@ function reservoirHeatmapChart(data, max) {
   svg.classList.add('heatmap')
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
 
-  const year_cnt = Object.keys(data).length
+  const year_cnt = thisyear - START_YEAR + 1;
   const year_height = chart_bottom / year_cnt
 
   const entries = Object.entries(data)
 
-  let year_idx = 0;
+  // 畫熱度圖，一年一行
+  // 還沒有資料的年份則留白（ex: 寶二水庫 2006 年才完工，之前不會有資料）
   for (const [year, dates] of entries) {
-    year_idx += 1;
-
-    const year_y = year_height * (year_idx - 1);
+    const year_y = year_height * (year - START_YEAR);
     const year_day = 366;
     const year_start = new Date(year, 1, 1);
     let last_date = new Date(year - 1, 12, 22);
@@ -928,8 +929,25 @@ function reservoirHeatmapChart(data, max) {
     }
   }
 
-  const first_year = parseInt(entries[0][0])
-  for (const [year, y] of [[thisyear, height - 16 - 2], [first_year, 10]]) {
+  // 年份標記
+  // 顯示兩個年份
+  // - 水庫開始有資料的年份，或是資料最早的年份。高度要配合年份實際高度
+  // - 今年，在圖表最下面
+  const first_year = parseInt(entries[0][0]);
+  for (const year of [thisyear, first_year]) {
+      let y = (year - START_YEAR) * year_height + 12;
+      y = Math.min(y, chart_bottom - 3);
+
+      const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      bg.setAttribute('x', 5);
+      bg.setAttribute('y', y - 10);
+      bg.setAttribute('width', 30);
+      bg.setAttribute('height', 13);
+      bg.setAttribute('rx', '4');
+      bg.setAttribute('ry', '4');
+      bg.setAttribute('fill', 'rgba(255,255,255, 0.5)');
+      svg.append(bg);
+
       const year_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
       year_text.textContent = year;
       year_text.setAttribute("x", 20);
@@ -1142,7 +1160,7 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}${init_serial}`)
     let year = ymd.split('-')[0]
 
     // 做一筆假資料，讓 {year}-12-22 在圖上會連到 {year+1}-01-01
-    if (`${year}-01-01` == ymd && year > 2004) {
+    if (`${year}-01-01` == ymd && year > START_YEAR) {
       let prev_ymd = `${year-1}-12-31`
       reservoir_history[reservoir][year-1][prev_ymd] = current
     }
