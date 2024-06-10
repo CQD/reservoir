@@ -1351,8 +1351,8 @@ for (const [type, func] of Object.entries(chart_type_defs)) {
     e.target.classList.add('active');
     redraw();
     smoothLink();
-
-    setCookie('chart_type', type)
+    setCookie('chart_type', type);
+    gtag('event', 'change_chart_type', {"chart_type": type});
   });
 }
 
