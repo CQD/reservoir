@@ -28,12 +28,14 @@ UPDATE_TIMER: Timer = None
 
 def load_tsv_files():
     global TSV_FROM_FILE
+    this_year = datetime.now().year
 
-    tsv_files = [*Path('public/reservoir-history').glob('*.tsv')]
-    tsv_files.sort()
-
-    for tsv_file in tsv_files:
-        TSV_FROM_FILE += tsv_file.read_text()
+    for year in range(2003, this_year + 1):
+        tsv_file = Path(f'public/reservoir-history/{year}.tsv')
+        if tsv_file.exists():
+            TSV_FROM_FILE += tsv_file.read_text()
+        else:
+            logger.warning(f"找不到 {tsv_file}")
 
 
 def livespan(app: FastAPI):
