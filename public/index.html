@@ -636,7 +636,7 @@ function fillrateToColor(fill_rate, full_rgb, half_rgb, dry_rgb) {
   const DRY_RGB  = dry_rgb  || [255, 20, 0];
   let color_str = 'rgba(0,160,240)'
   if (fill_rate <= 0) {
-    color_str = 'rgb(200,200,200)'
+    color_str = 'rgba(224,224,224, 0)'
   } else if (fill_rate < 0.5) {
     color_str = middleColor(DRY_RGB, HALF_RGB, (fill_rate) / 0.5)
   } else if (fill_rate < 0.9) {
@@ -930,7 +930,7 @@ function reservoirHeatmapChart(data, max) {
     const year_y = year_height * (year - START_YEAR);
     const year_day = 366;
     const year_start = new Date(year, 1, 1);
-    let last_date = new Date(year - 1, 12, 22);
+    let last_date = null;
     let last_amount = 0;
     for (let [ymd, amount] of Object.entries(dates)) {
       const cell = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -941,6 +941,17 @@ function reservoirHeatmapChart(data, max) {
       const [yy, mm, dd] = ymd.split('-');
       const dt = new Date(yy, mm, dd);
       const day_of_year = Math.floor((dt - year_start) / (86400 * 1000));
+
+      if (!last_date) {
+        if (ymd.slice(6, 10) === "01-01") {
+          // 年初第一筆資料，連結到去年最後一個資料點
+          last_date = new Date(year - 1, 12, 22);
+        } else {
+          // 年中才有資料，區塊最多頂到七日前
+          last_date = new Date(dt - 86400 * 1000 * 7);
+        }
+      }
+
       const day_of_year_last_date = Math.floor((last_date - year_start) / (86400 * 1000));
       const day_to_last_date = Math.floor((dt - last_date) / (86400 * 1000));
 
