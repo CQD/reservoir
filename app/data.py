@@ -132,19 +132,19 @@ class ReservoirCrawler:
         return result
 
 
-    def fetch_uppdated_as_tsv(self, last_date: date=None, offset:int=1):
-        boundry_date = datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=offset)
+    def fetch_uppdated_as_tsv(self, begin_date: date, end_date: date | None=None):
+        end_date = end_date or datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=1)
 
         lines = []
-        for y in range(last_date.year, boundry_date.year + 1):
+        for y in range(begin_date.year, end_date.year + 1):
             for m in range(1, 13):
                 for d in (1, 8, 15, 22):
                     cursor_dt = date(y, m, d)
                     cursor_dt_str = cursor_dt.strftime('%Y-%m-%d')
 
-                    if cursor_dt <= last_date:
+                    if cursor_dt <= begin_date:
                         continue
-                    if cursor_dt >= boundry_date:
+                    if cursor_dt >= end_date:
                         break
 
                     lines.extend(f"{name}\t{max}\t{curr}\t{cursor_dt_str}\n" \
@@ -171,4 +171,4 @@ if __name__ == '__main__':
     last_dt = date(yy, mm, dd)
 
     crawer = ReservoirCrawler()
-    print(crawer.fetch_uppdated_as_tsv(last_date=last_dt), end='')
+    print(crawer.fetch_uppdated_as_tsv(begin_date=last_dt), end='')

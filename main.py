@@ -98,7 +98,7 @@ def fetch_new_data():
     logger.warning(f"最新資料時間是 {last_date}，撈取更新的資料")
 
     crawer = ReservoirCrawler()
-    TSV_SUPPLEMENTAL += crawer.fetch_uppdated_as_tsv(last_date=last_date)
+    TSV_SUPPLEMENTAL += crawer.fetch_uppdated_as_tsv(begin_date=last_date)
     logger.warning("[fetch_new_data] 固定資料點已更新")
 
     # 拉最新的資料
