@@ -19,7 +19,6 @@ TPE_TIMEZONE = ZoneInfo("Asia/Taipei")
 TSV_FROM_FILE = ''
 TSV_SUPPLEMENTAL = ''  # 歷史檔案裡面缺少的固定資料點（每月 1, 8, 15, 22 日）
 TSV_LATEST = ''  # 此刻的最新資料
-TSV_COMBINED = TSV_FROM_FILE
 
 UPDATE_TIME = 0
 UPDATE_INTERVAL = 3600
@@ -27,7 +26,7 @@ UPDATE_TIMER: Timer = None
 
 
 def load_tsv_files():
-    global TSV_FROM_FILE
+    global TSV_FROM_FILE, UPDATE_TIME
     this_year = datetime.now().year
 
     for year in range(2003, this_year + 1):
@@ -36,6 +35,9 @@ def load_tsv_files():
             TSV_FROM_FILE += tsv_file.read_text()
         else:
             logger.warning(f"找不到 {tsv_file}")
+
+    last_date = TSV_FROM_FILE[-11:-1]
+    UPDATE_TIME = datetime.strptime(last_date, '%Y-%m-%d').timestamp() + (86400 - 1)
 
 
 def livespan(app: FastAPI):
@@ -95,11 +97,11 @@ async def reservoir_history():
         'Cache-Control': f'public, max-age={cache_time}',
         'x-update-time': datetime.fromtimestamp(UPDATE_TIME, tz=TPE_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S'),
     }
-    return PlainTextResponse(TSV_COMBINED, headers=headers)
+    return PlainTextResponse(TSV_FROM_FILE + TSV_SUPPLEMENTAL + TSV_LATEST, headers=headers)
 
 
 def fetch_new_data():
-    global TSV_SUPPLEMENTAL, TSV_LATEST, TSV_COMBINED, UPDATE_TIME
+    global TSV_SUPPLEMENTAL, TSV_LATEST, UPDATE_TIME
 
     logger.warning("[fetch_new_data] 開始")
 
@@ -131,7 +133,6 @@ def fetch_new_data():
     logger.warning("[fetch_new_data] 最新資料點已更新")
 
     UPDATE_TIME = time.time()
-    TSV_COMBINED = TSV_FROM_FILE + TSV_SUPPLEMENTAL + TSV_LATEST
     logger.warning("[fetch_new_data] 資料更新完成")
 
 
