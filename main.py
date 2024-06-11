@@ -21,13 +21,14 @@ TSV_FROM_FILE = ''
 TSV_SUPPLEMENTAL = ''  # 歷史檔案裡面缺少的固定資料點（每月 1, 8, 15, 22 日）
 TSV_LATEST = ''  # 此刻的最新資料
 
-UPDATE_TIME = 0
+PREV_UPDATE_TIME = datetime.now().timestamp()
+NEXT_UPDATE_TIME = datetime.now().timestamp()
 UPDATE_INTERVAL = 3600
 UPDATE_TIMER: Timer = None
 
 
 def load_tsv_files():
-    global TSV_FROM_FILE, UPDATE_TIME
+    global TSV_FROM_FILE, NEXT_UPDATE_TIME
     this_year = datetime.now().year
 
     for year in range(2003, this_year + 1):
@@ -38,7 +39,6 @@ def load_tsv_files():
             logger.warning(f"找不到 {tsv_file}")
 
     last_date = TSV_FROM_FILE[-11:-1]
-    UPDATE_TIME = datetime.strptime(last_date, '%Y-%m-%d').timestamp() + (86400 - 1)
 
 
 def livespan(app: FastAPI):
@@ -50,13 +50,18 @@ def livespan(app: FastAPI):
     logger.warning("[startup] 排定撈最新資料")
 
     def updater():
+        global NEXT_UPDATE_TIME, PREV_UPDATE_TIME, UPDATE_TIMER
+
         logger.warning("[updater] 啟動")
         interval = UPDATE_INTERVAL
         try:
             fetch_new_data()
+            PREV_UPDATE_TIME = time.time()
         except:
             logger.exception("[updater] 更新資料時發生錯誤")
             interval = 1000
+
+        NEXT_UPDATE_TIME = time.time() + interval
 
         logger.warning("[updater] 結束，將於 %s 秒後再次執行", interval)
         UPDATE_TIMER = Timer(interval, updater)
@@ -92,19 +97,20 @@ async def static_file(request: Request):
 @app.get("/api/reservoir-history.tsv")
 async def reservoir_history():
     now = time.time()
-    cache_time = max(int(UPDATE_TIME + UPDATE_INTERVAL - now), 0) + 30
+
+    cache_time = max(int(NEXT_UPDATE_TIME - now), 0) + 30
     full_tsv = TSV_FROM_FILE + TSV_SUPPLEMENTAL + TSV_LATEST
 
     headers = {
         'etag': hashlib.md5(full_tsv.encode()).hexdigest(),
         'Cache-Control': f'public, max-age={cache_time}',
-        'x-update-time': datetime.fromtimestamp(UPDATE_TIME, tz=TPE_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S'),
+        'x-update-time': datetime.fromtimestamp(PREV_UPDATE_TIME, tz=TPE_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S'),
     }
     return PlainTextResponse(full_tsv, headers=headers)
 
 
 def fetch_new_data():
-    global TSV_SUPPLEMENTAL, TSV_LATEST, UPDATE_TIME
+    global TSV_SUPPLEMENTAL, TSV_LATEST
 
     logger.warning("[fetch_new_data] 開始")
 
@@ -134,9 +140,6 @@ def fetch_new_data():
                 for name, (max, curr) in crawed_data.items()]
     TSV_LATEST = "".join(lines)
     logger.warning("[fetch_new_data] 最新資料點已更新")
-
-    UPDATE_TIME = time.time()
-    logger.warning("[fetch_new_data] 資料更新完成")
 
 
 if __name__ == '__main__':
