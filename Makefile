@@ -21,7 +21,7 @@ deploy:
 	gcloud app deploy --project='reservoir-358117' --promote --stop-previous-version ${OPTIONS}
 
 update:
-	source venv/bin/activate && python app/data.py >> public/reservoir-history.tsv
+	source venv/bin/activate && python app/data.py >> public/reservoir-history/$$(date "+%Y").tsv
 	git diff
 
 ################################################

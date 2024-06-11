@@ -16,18 +16,31 @@ logger = logging.getLogger(__name__)
 
 TPE_TIMEZONE = ZoneInfo("Asia/Taipei")
 
-TSV_CONTENT = Path('public/reservoir-history.tsv').read_text()
-TSV_SUPPLEMENTAL = ''
-TSV_LATEST = ''
-TSV_COMBINED = TSV_CONTENT
+TSV_FROM_FILE = ''
+TSV_SUPPLEMENTAL = ''  # 歷史檔案裡面缺少的固定資料點（每月 1, 8, 15, 22 日）
+TSV_LATEST = ''  # 此刻的最新資料
+TSV_COMBINED = TSV_FROM_FILE
 
-UPDATE_TIME = datetime.strptime(TSV_CONTENT[-11:-1], "%Y-%m-%d").timestamp()
+UPDATE_TIME = 0
 UPDATE_INTERVAL = 3600
 UPDATE_TIMER: Timer = None
 
 
+def load_tsv_files():
+    global TSV_FROM_FILE
+
+    tsv_files = [*Path('public/reservoir-history').glob('*.tsv')]
+    tsv_files.sort()
+
+    for tsv_file in tsv_files:
+        TSV_FROM_FILE += tsv_file.read_text()
+
+
 def livespan(app: FastAPI):
     global UPDATE_TIMER
+
+    logger.warning("[startup] 從檔案載入歷史資料")
+    load_tsv_files()
 
     logger.warning("[startup] 排定撈最新資料")
 
@@ -89,7 +102,7 @@ def fetch_new_data():
     logger.warning("[fetch_new_data] 開始")
 
     # 更新固定資料點的資料
-    tsv = TSV_SUPPLEMENTAL if TSV_SUPPLEMENTAL else TSV_CONTENT
+    tsv = TSV_SUPPLEMENTAL if TSV_SUPPLEMENTAL else TSV_FROM_FILE
     last_date_str = tsv[-11:-1]
 
     yy, mm, dd = map(lambda val_str: int(val_str), last_date_str.split("-"))
@@ -116,7 +129,7 @@ def fetch_new_data():
     logger.warning("[fetch_new_data] 最新資料點已更新")
 
     UPDATE_TIME = time.time()
-    TSV_COMBINED = TSV_CONTENT + TSV_SUPPLEMENTAL + TSV_LATEST
+    TSV_COMBINED = TSV_FROM_FILE + TSV_SUPPLEMENTAL + TSV_LATEST
     logger.warning("[fetch_new_data] 資料更新完成")
 
 
