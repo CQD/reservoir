@@ -1,4 +1,5 @@
 from datetime import date, datetime
+import hashlib
 import logging
 from pathlib import Path
 from threading import Timer
@@ -92,12 +93,14 @@ async def static_file(request: Request):
 async def reservoir_history():
     now = time.time()
     cache_time = max(int(UPDATE_TIME + UPDATE_INTERVAL - now), 0) + 30
+    full_tsv = TSV_FROM_FILE + TSV_SUPPLEMENTAL + TSV_LATEST
 
     headers = {
+        'etag': hashlib.md5(full_tsv.encode()).hexdigest(),
         'Cache-Control': f'public, max-age={cache_time}',
         'x-update-time': datetime.fromtimestamp(UPDATE_TIME, tz=TPE_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S'),
     }
-    return PlainTextResponse(TSV_FROM_FILE + TSV_SUPPLEMENTAL + TSV_LATEST, headers=headers)
+    return PlainTextResponse(full_tsv, headers=headers)
 
 
 def fetch_new_data():
