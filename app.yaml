@@ -4,17 +4,14 @@ handlers:
 - url: /
   static_files: public/index.html
   upload: public/index.html
-  secure: always
 
 - url: /(.*\.(svg|png|txt))$
   static_files: public/\1
   upload: public/.*\.(svg|png|txt)$
-  secure: always
 
 - url: /favicon.ico
   static_files: public/favicon.png
   upload: public/favicon.png
-  secure: always
 
 entrypoint: gunicorn -c gunicorn.py -b :$PORT main:app
 
