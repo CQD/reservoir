@@ -59,7 +59,7 @@ def livespan(app: FastAPI):
             PREV_UPDATE_TIME = time.time()
         except:
             logger.exception("[updater] 更新資料時發生錯誤")
-            interval = 1000
+            interval = 2000
 
         NEXT_UPDATE_TIME = time.time() + interval
 
