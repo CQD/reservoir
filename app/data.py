@@ -160,30 +160,32 @@ class ReservoirCrawler:
 def get_last_ymd_from_file() -> str:
     now = datetime.now()
 
-    current_year = now.year
-    tsv_file = "%s/../public/reservoir-history/%s.tsv" % (os.path.dirname(__file__), current_year)
+    for year in range(now.year, now.year - 10, -1):
+        tsv_file = "%s/../public/reservoir-history/%s.tsv" % (os.path.dirname(__file__), year)
+        if not os.path.exists(tsv_file):
+            continue
 
-    if not os.path.exists(tsv_file):
-        tsv_file = "%s/../public/reservoir-history/%s.tsv" % (os.path.dirname(__file__), current_year - 1)
+        last_line = ""
+        with open(tsv_file, 'rb') as f:
+            try:  # catch OSError in case of a one line file
+                f.seek(-2, os.SEEK_END)
+                while f.read(1) != b'\n':
+                    f.seek(-2, os.SEEK_CUR)
+            except OSError:
+                f.seek(0)
+            last_line = f.readline().decode().strip() or last_line
 
-    if not os.path.exists(tsv_file):
-        return (now - timedelta(days=1)).strftime('%Y-%m-%d')
+        if last_line.strip():
+            return last_line.split('\t')[-1].strip()
 
-    last_line = ""
-    with open(tsv_file, 'rb') as f:
-        try:  # catch OSError in case of a one line file
-            f.seek(-2, os.SEEK_END)
-            while f.read(1) != b'\n':
-                f.seek(-2, os.SEEK_CUR)
-        except OSError:
-            f.seek(0)
-        last_line = f.readline().decode().strip() or last_line
-
-    return last_line.split('\t')[-1].strip()
+    return ""
 
 
 if __name__ == '__main__':
-    tsv_file = "%s/../public/reservoir-history.tsv" % (os.path.dirname(__file__))
+    now = datetime.now()
+    current_year = now.year
+
+    tsv_file = "%s/../public/reservoir-history/%s.tsv" % (os.path.dirname(__file__), current_year)
 
     begin_date_ymd = sys.argv[1] if len(sys.argv) > 1 else None
     end_date_ymd = sys.argv[2] if len(sys.argv) > 2 else None
