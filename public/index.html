@@ -706,16 +706,20 @@ function groupChart(group_data) {
     circle_outer.setAttribute('r', outer_radius)
     circle_outer.setAttribute('cx', g_width / 2)
     circle_outer.setAttribute('cy', g_radius)
-    circle_outer.setAttribute('fill', '#c9c9c9')
+    circle_outer.setAttribute('fill', '#eee')
+    circle_outer.setAttribute('stroke', color_str)
     g.append(circle_outer)
 
-    const circle_inner = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    const inner_raduis = size * g_radius * (Math.pow(fill_rate, 0.5))
-    circle_inner.setAttribute('r', inner_raduis)
-    circle_inner.setAttribute('cx', g_width / 2)
-    circle_inner.setAttribute('cy', g_radius)
-    circle_inner.setAttribute('fill', color_str)
-    g.append(circle_inner)
+    const pie = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const arc_start_x = g_width / 2;
+    const arc_start_y = g_radius - outer_radius;
+    const arc_end_x = g_width / 2 + outer_radius * Math.sin(Math.PI * 2 * fill_rate);
+    const arc_end_y = g_radius - outer_radius * Math.cos(Math.PI * 2 * fill_rate); // Adjusted to sync with arc_start_y
+    const large_arc_flag = fill_rate > 0.5 ? 1 : 0;
+    const d = `M ${arc_start_x} ${arc_start_y} A ${outer_radius} ${outer_radius} 0 ${large_arc_flag} 1 ${arc_end_x} ${arc_end_y} L ${g_width / 2} ${g_radius}`;
+    pie.setAttribute('d', d);
+    pie.setAttribute('fill', color_str);
+    g.append(pie);
 
     const name_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     name_text.textContent = name
