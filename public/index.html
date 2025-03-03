@@ -1184,11 +1184,8 @@ let reservoir_capacity = {}
 
 let datatime = '2022-12-08'
 
-let init_serial = 0
-
 function init(){
-init_serial += 1
-fetch(`/api/reservoir-history.tsv?v=${assetver()}${init_serial}`)
+fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
 .then(response => {
   datatime = response.headers.get('x-update-time') || datatime
   return response.text()
@@ -1374,8 +1371,6 @@ document.getElementById(`use_${chart_type}`).classList.add('active');
 // 拉資料並開始繪製圖表（非同步）
 init()
 
-// 看板模式，每小時更新資料
-setInterval(init, 3600000)
 </script>
 </body>
 </html>
