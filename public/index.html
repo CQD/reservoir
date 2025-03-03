@@ -1045,6 +1045,87 @@ function reservoirHeatmapChart(data, max) {
   return svg
 }
 
+// 畫地圖區塊的 function，有些時候會因為等待其他資料而重跑
+function mapDraw() {
+  const map_ele = document.getElementById('twmap')
+  const mapdoc = map_ele.contentDocument
+  const reses = mapdoc ? mapdoc.getElementById('reservoirs') : null
+
+  // 如果 SVG 還沒載入，等載入完成重跑一次
+  if (!reses) {
+    map_ele.addEventListener('load', mapDraw)
+    return
+  }
+
+  // 如果資料還沒載入，等一下重跑一次
+  if (Object.keys(reservoir_capacity).length == 0) {
+    setTimeout(mapDraw, 100)
+    return
+  }
+
+  // 水庫
+  Object.keys(reservoir_locations).forEach(name => {
+    const [x, y] = reservoir_locations[name]
+    const res_circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+
+    const base_radius = 4
+    const radius = base_radius + Math.sqrt(reservoir_capacity[name]) / 13
+
+    res_circle.setAttribute('cx', x)
+    res_circle.setAttribute('cy', y)
+    res_circle.setAttribute('r', radius)
+    res_circle.setAttribute('id', name)
+
+    if (reservoir_capacity[name]) {
+      const fill_rate = reservoir_current[name] / reservoir_capacity[name]
+      res_circle.setAttribute('fill', fillrateToColor(fill_rate))
+    }
+
+    res_circle.addEventListener('mouseover', mapHighlighterMaker(name))
+    res_circle.addEventListener('mouseout', mapHighlighterMaker(null))
+    reses.append(res_circle)
+  })
+
+  Object.keys(reservoir_locations).forEach(name => {
+    const [x, y] = reservoir_locations[name]
+    const res_text = document.createElementNS("http://www.w3.org/2000/svg", "text")
+
+    let fill_rate = 0.0
+    if (reservoir_capacity[name]) {
+      fill_rate = reservoir_current[name] / reservoir_capacity[name]
+    }
+
+    const special_offsets = {
+      "石門水庫": [-100, -20],
+      "翡翠水庫": [30, -25],
+      "日月潭水庫": [15, -5],
+      "default": [30, -15],
+    }
+    let [x_offset, y_offset] = special_offsets[name] || special_offsets["default"]
+
+    res_text.textContent = `${name} ${(fill_rate*100).toFixed(1)}%`
+    res_text.setAttribute('x', Math.min(x + x_offset, 370))
+    res_text.setAttribute('y', Math.max(y + y_offset, 30))
+    res_text.setAttribute('id', `${name}_text`)
+    reses.append(res_text)
+
+    if (["翡翠水庫", "石門水庫", "德基水庫", "日月潭水庫", "曾文水庫"].includes(name)) {
+      res_text.classList.add('large')
+    }
+
+  })
+
+  // 水情燈號
+  Object.keys(ALERTS).forEach(color => {
+    ALERTS[color].forEach(region_name => {
+      const region = map_ele.contentDocument.getElementById(region_name)
+      if (region) {
+        region.setAttribute('fill', color)
+      }
+    })
+  })
+}
+
 function redraw() {
   const main = document.createElement('div')
   const summary = document.createElement('aside')
@@ -1182,7 +1263,7 @@ let reservoir_history = {}
 let reservoir_current = {}
 let reservoir_capacity = {}
 
-let datatime = '2022-12-08'
+let datatime = '0000-00-00'
 
 function init(){
 fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
@@ -1216,6 +1297,7 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
 })
 .then(() => {
   redraw()
+  mapDraw()
   if (window.location.hash) {
     window.location = window.location
   }
@@ -1226,92 +1308,6 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
     const name = decodeURI(window.location.hash .replace('#', ''))
     flash_chart(name)
   }
-})
-.then(() => {
-  const map = document.getElementById('twmap')
-
-  // 畫地圖資料的 function，有些時候會呼叫多次
-  function mapDraw() {
-    const mapdoc = map.contentDocument
-    const reses = mapdoc ? mapdoc.getElementById('reservoirs') : null
-
-    // 如果 SVG 還沒載入，等載入完成重跑一次
-    if (!reses) {
-      map.addEventListener('load', mapDraw)
-      return
-    }
-
-    // 水庫
-    Object.keys(reservoir_locations).forEach(name => {
-      const [x, y] = reservoir_locations[name]
-      const res_circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
-
-      const base_radius = 4
-      const radius = base_radius + Math.sqrt(reservoir_capacity[name]) / 13
-
-      res_circle.setAttribute('cx', x)
-      res_circle.setAttribute('cy', y)
-      res_circle.setAttribute('r', radius)
-      res_circle.setAttribute('id', name)
-
-      if (reservoir_capacity[name]) {
-        const fill_rate = reservoir_current[name] / reservoir_capacity[name]
-        res_circle.setAttribute('fill', fillrateToColor(fill_rate))
-      }
-
-      res_circle.addEventListener('mouseover', mapHighlighterMaker(name))
-      res_circle.addEventListener('mouseout', mapHighlighterMaker(null))
-      reses.append(res_circle)
-    })
-
-    Object.keys(reservoir_locations).forEach(name => {
-      const [x, y] = reservoir_locations[name]
-      const res_text = document.createElementNS("http://www.w3.org/2000/svg", "text")
-
-      let fill_rate = 0.0
-      if (reservoir_capacity[name]) {
-        fill_rate = reservoir_current[name] / reservoir_capacity[name]
-      }
-
-      let x_offset = 30
-      let y_offset = -15
-
-      if ("石門水庫" == name) {
-        x_offset = -100
-        y_offset = -20
-      }
-      if ("翡翠水庫" == name) {
-        y_offset = -25
-      }
-      if ("日月潭水庫" == name) {
-        x_offset = 15
-        y_offset = -5
-      }
-
-      res_text.textContent = `${name} ${(fill_rate*100).toFixed(1)}%`
-      res_text.setAttribute('x', Math.min(x + x_offset, 370))
-      res_text.setAttribute('y', Math.max(y + y_offset, 30))
-      res_text.setAttribute('id', `${name}_text`)
-      reses.append(res_text)
-
-      if (["翡翠水庫", "石門水庫", "德基水庫", "日月潭水庫", "曾文水庫"].includes(name)) {
-        res_text.classList.add('large')
-      }
-
-    })
-
-    // 水情燈號
-    Object.keys(ALERTS).forEach(color => {
-      ALERTS[color].forEach(region_name => {
-        const region = map.contentDocument.getElementById(region_name)
-        if (region) {
-          region.setAttribute('fill', color)
-        }
-      })
-    })
-  }
-
-  mapDraw()
 })
 
 }
