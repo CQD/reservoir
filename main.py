@@ -10,7 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.responses import FileResponse, PlainTextResponse
 
-from app.data import ReservoirCrawler
+from app.data import ReservoirCrawler, RESERVOIR_GROUPS
 
 
 logger = logging.getLogger(__name__)
@@ -27,18 +27,47 @@ UPDATE_INTERVAL = 3600
 UPDATE_TIMER: Timer = None
 
 
+# CURR_DATA[{水庫名稱}] = [最大蓄水量, 目前蓄水量]
+CURR_DATA: dict[str, list[float]] = {}
+TSV_CURR: str = ''
+
 def load_tsv_files():
-    global TSV_FROM_FILE, NEXT_UPDATE_TIME
+    global TSV_FROM_FILE
     this_year = datetime.now().year
 
+    contents: list[str] = []
     for year in range(2003, this_year + 1):
         tsv_file = Path(f'public/reservoir-history/{year}.tsv')
         if tsv_file.exists():
-            TSV_FROM_FILE += tsv_file.read_text()
+            contents.append(tsv_file.read_text())
         else:
             logger.warning(f"找不到 {tsv_file}")
 
-    last_date = TSV_FROM_FILE[-11:-1]
+    TSV_FROM_FILE = "".join(contents)
+    tsv_to_curr_data(TSV_FROM_FILE)
+
+
+def tsv_to_curr_data(tsv: str):
+    global TSV_CURR
+    for line in tsv.split('\n'):
+        fields = line.split('\t')
+
+        if len(fields) != 4:
+            continue
+
+        name, max, curr, dt = fields
+
+        max_f = float(max)
+        curr_f = float(curr)
+
+        if name not in CURR_DATA:
+            CURR_DATA[name] = [-1.0, -1.0]
+        if max_f > 0:
+            CURR_DATA[name][0] = max_f
+        if curr_f > 0:
+            CURR_DATA[name][1] = curr_f
+
+    TSV_CURR = '\n'.join(f"{name}\t{max}\t{curr}" for name, (max, curr) in CURR_DATA.items())
 
 
 def livespan(app: FastAPI):
@@ -109,8 +138,22 @@ async def reservoir_history():
     return PlainTextResponse(full_tsv, headers=headers)
 
 
+@app.get("/api/curr.tsv")
+async def curr():
+    now = time.time()
+
+    cache_time = max(int(NEXT_UPDATE_TIME - now), 0) + 30
+
+    headers = {
+        'etag': hashlib.md5(TSV_CURR.encode()).hexdigest(),
+        'Cache-Control': f'public, max-age={cache_time}',
+        'x-update-time': datetime.fromtimestamp(PREV_UPDATE_TIME, tz=TPE_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S'),
+    }
+    return PlainTextResponse(TSV_CURR, headers=headers)
+
+
 def fetch_new_data():
-    global TSV_SUPPLEMENTAL, TSV_LATEST
+    global TSV_SUPPLEMENTAL, TSV_LATEST, TSV_CURR
 
     logger.warning("[fetch_new_data] 開始")
 
@@ -129,7 +172,6 @@ def fetch_new_data():
 
     # 拉最新的資料
     today_str = datetime.now(TPE_TIMEZONE).strftime('%Y-%m-%d')
-
     crawed_data = crawer.fetch()
 
     if len(crawed_data) <= 0:
@@ -139,6 +181,12 @@ def fetch_new_data():
     lines = [f"{name}\t{max}\t{curr}\t{today_str}\n"
                 for name, (max, curr) in crawed_data.items()]
     TSV_LATEST = "".join(lines)
+
+    # 紀錄目前蓄水量/最大蓄水量
+    logger.warning("[fetch_new_data] 更新水庫目前蓄水量/最大蓄水量")
+    tsv_to_curr_data(TSV_SUPPLEMENTAL)
+    tsv_to_curr_data(TSV_LATEST)
+
     logger.warning("[fetch_new_data] 最新資料點已更新")
 
 
