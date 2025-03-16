@@ -707,11 +707,12 @@ function groupChart(group_data) {
     g.append(circle_outer)
 
     const pie = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const fill_rate_arc = Math.min(fill_rate, 0.9999)
     const arc_start_x = g_width / 2;
     const arc_start_y = g_radius - outer_radius;
-    const arc_end_x = g_width / 2 + outer_radius * Math.sin(Math.PI * 2 * fill_rate);
-    const arc_end_y = g_radius - outer_radius * Math.cos(Math.PI * 2 * fill_rate); // Adjusted to sync with arc_start_y
-    const large_arc_flag = fill_rate > 0.5 ? 1 : 0;
+    const arc_end_x = g_width / 2 + outer_radius * Math.sin(Math.PI * 2 * fill_rate_arc);
+    const arc_end_y = g_radius - outer_radius * Math.cos(Math.PI * 2 * fill_rate_arc); // Adjusted to sync with arc_start_y
+    const large_arc_flag = fill_rate_arc > 0.5 ? 1 : 0;
     const d = `M ${arc_start_x} ${arc_start_y} A ${outer_radius} ${outer_radius} 0 ${large_arc_flag} 1 ${arc_end_x} ${arc_end_y} L ${g_width / 2} ${g_radius}`;
     pie.setAttribute('d', d);
     pie.setAttribute('fill', color_str);
