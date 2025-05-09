@@ -627,7 +627,7 @@ function fillrateToColor(fill_rate, full_rgb, half_rgb, dry_rgb) {
   const DRY_RGB  = dry_rgb  || [255, 20, 0];
   let color_str = 'rgba(0,160,240)'
   if (fill_rate <= 0) {
-    color_str = 'rgba(224,224,224, 0)'
+    color_str = 'rgb(128, 0, 128)'
   } else if (fill_rate < 0.5) {
     color_str = middleColor(DRY_RGB, HALF_RGB, (fill_rate) / 0.5)
   } else if (fill_rate < 0.9) {
@@ -727,6 +727,9 @@ function groupChart(group_data) {
 
     const percent_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     percent_text.textContent = `${(fill_rate*100).toPrecision(3)}%`
+    if (fill_rate < 0.1) {
+      percent_text.textContent = '???%'
+    }
     percent_text.classList.add('percent')
     percent_text.setAttribute('stroke', color_str)
     percent_text.setAttribute('x', g_width / 2)
@@ -1293,8 +1296,11 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
   return response.text()
 })
 .then(tsv => {
-  tsv.split("\n")
-  .forEach(line => {
+  const lines = tsv.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
     if (!line) return;
     let [reservoir, capacity, current, ymd] = line.split("\t")
     let year = ymd.split('-')[0]
@@ -1310,10 +1316,11 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
     reservoir_history[reservoir][year][ymd] = current
 
     reservoir_capacity[reservoir] = (capacity>1) ? capacity : reservoir_capacity[reservoir]
-    if (current > 0) {
+    if (current > 0 && lines.length - i < 5) {
       reservoir_current[reservoir] = current
     }
-  })
+  }
+
   document.getElementById('desc').textContent = `資料更新時間：${datatime}`
 })
 .then(() => {

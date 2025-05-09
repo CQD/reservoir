@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import hashlib
 import logging
 from pathlib import Path
@@ -49,13 +49,19 @@ def load_tsv_files():
 
 def tsv_to_curr_data(tsv: str):
     global TSV_CURR
+
+    now = datetime.now(tz=TPE_TIMEZONE)
     for line in tsv.split('\n'):
         fields = line.split('\t')
 
         if len(fields) != 4:
             continue
 
-        name, max, curr, dt = fields
+        name, max, curr, dt_str = fields
+
+        dt = datetime.strptime(dt_str, '%Y-%m-%d').astimezone(tz=TPE_TIMEZONE)
+        if now - dt > timedelta(days=30):
+            continue
 
         max_f = float(max)
         curr_f = float(curr)
