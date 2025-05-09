@@ -51,6 +51,7 @@ def tsv_to_curr_data(tsv: str):
     global TSV_CURR
 
     now = datetime.now(tz=TPE_TIMEZONE)
+    delta_7 = timedelta(days=7)
     for line in tsv.split('\n'):
         fields = line.split('\t')
 
@@ -60,8 +61,7 @@ def tsv_to_curr_data(tsv: str):
         name, max, curr, dt_str = fields
 
         dt = datetime.strptime(dt_str, '%Y-%m-%d').astimezone(tz=TPE_TIMEZONE)
-        if now - dt > timedelta(days=30):
-            continue
+        too_old = now - dt > delta_7
 
         max_f = float(max)
         curr_f = float(curr)
@@ -70,7 +70,7 @@ def tsv_to_curr_data(tsv: str):
             CURR_DATA[name] = [-1.0, -1.0]
         if max_f > 0:
             CURR_DATA[name][0] = max_f
-        if curr_f > 0:
+        if curr_f > 0 and not too_old:
             CURR_DATA[name][1] = curr_f
 
     TSV_CURR = '\n'.join(f"{name}\t{max}\t{curr}" for name, (max, curr) in CURR_DATA.items())
