@@ -122,6 +122,29 @@ a:link, a:visited{
   color: #fff;
 }
 
+#chart_switch div#select_line_chart_year {
+    width:0;
+    padding:0;
+    overflow: hidden;
+    opacity: 0;
+}
+#chart_switch div#select_line_chart_year.active {
+    width: auto;
+    padding: 0.3em 0.7em;
+    opacity: 1;
+}
+#select_line_chart_year select{
+    color: #000;
+    font-size: 16px;
+    border: none;
+    background: transparent;
+    -webkit-appearance: none;
+    transition: all 0.3s;
+}
+#select_line_chart_year.active select{
+    color:#fff;
+}
+
 svg polyline{
   transition: all 0.17s;
   stroke:var(--grid-color);
@@ -450,6 +473,7 @@ gtag('config', 'G-93370QFS9E');
 <div id="main_wrapper">
 <aside id="chart_switch" class="hidden">
   <div id="use_line_chart">折線圖</div>
+  <div id="select_line_chart_year"><select id=""></select></div>
   <div id="use_heatmap">時序圖</div>
 </aside>
 <div id="main">
@@ -567,16 +591,17 @@ function getCookie(name) {
     return null;
 }
 
-function lineOver(e) {
-  let year = e.target.dataset['year']
-  if (e.target.classList.contains('thisyear')) {
-    year = ''
-  }
+// function lineOver(e) {
+//   let year = e.target.dataset['year']
+//   if (e.target.classList.contains('thisyear')) {
+//     year = ''
+//   }
 
-  highlight_year(year)
-}
+//   highlight_year(year)
+// }
 
 function highlight_year(year){
+  console.log("[highlight_year]", year)
   document.querySelectorAll(`svg.reservoir .year_text`).forEach(ele => {
     ele.textContent = year
   })
@@ -802,7 +827,7 @@ function reservoirLineChart(data, max) {
     line.classList.add(`year-${year}`)
     line.dataset['year'] = year
     line.setAttribute("opacity", 0.25)
-    line.addEventListener("mouseover", lineOver)
+    // line.addEventListener("mouseover", lineOver)
 
     let points = []
     let year_day = 366
@@ -1339,7 +1364,8 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
 }
 
 // 游標 highlight 過去年份的線圖
-document.body.addEventListener('click', () => highlight_year(''))
+// 先停用，跟年份選擇打架，在這裡比對 target 的 id 好像怪怪的...
+// document.body.addEventListener('click', () => highlight_year(''))
 
 // 當視窗大小改變，重新繪製所有圖表
 let column_size = get_column_size()
@@ -1366,11 +1392,28 @@ window.addEventListener("scroll", (event) => {
   }
 });
 
-// 設定切換圖表的按鈕
+// 設定切換圖表的按鈕，以及年份選擇
 const chart_type_defs = {
   'line_chart': reservoirLineChart,
   'heatmap': reservoirHeatmapChart,
 }
+
+const select_year_ele = document.getElementById("select_line_chart_year");
+select_year_ele.addEventListener('change', (e) => {
+  console.log(e);
+  highlight_year(e.target.value);
+  console.log("highlight year:", e.target.value);
+});
+
+const thisyear = new Date().getFullYear();
+const select_year_select_ele = select_year_ele.querySelector("select");
+for (let year = thisyear; year >= START_YEAR; year--) {
+  const option = document.createElement("option");
+  option.value = (year == thisyear) ? '' : year;
+  option.textContent = year;
+  select_year_select_ele.append(option);
+}
+
 
 for (const [type, func] of Object.entries(chart_type_defs)) {
   const ele_id = `use_${type}`
@@ -1378,7 +1421,14 @@ for (const [type, func] of Object.entries(chart_type_defs)) {
     window.reservoirChartFunc = func;
     document.getElementById('chart_switch').querySelectorAll('.active').forEach(ele => ele.classList.remove('active'));
     e.target.classList.add('active');
+
     redraw();
+
+    if (e.target.getAttribute("id") == "use_line_chart") {
+      select_year_ele.classList.add('active');
+      highlight_year(select_year_select_ele.value);
+    }
+
     smoothLink();
     setCookie('chart_type', type);
     gtag('event', 'change_chart_type', {"chart_type": type});
@@ -1388,6 +1438,9 @@ for (const [type, func] of Object.entries(chart_type_defs)) {
 const chart_type = getCookie('chart_type') || 'line_chart';
 window.reservoirChartFunc = chart_type_defs[chart_type] || reservoirLineChart;
 document.getElementById(`use_${chart_type}`).classList.add('active');
+if (chart_type == 'line_chart') {
+  select_year_ele.classList.add('active');
+}
 
 
 // 拉資料並開始繪製圖表（非同步）
