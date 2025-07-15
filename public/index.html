@@ -750,7 +750,7 @@ function groupChart(group_data) {
 
     const percent_text = document.createElementNS("http://www.w3.org/2000/svg", "text");
     percent_text.textContent = `${(fill_rate*100).toPrecision(3)}%`
-    if (fill_rate < 0.1) {
+    if (fill_rate < 0.001) {
       percent_text.textContent = '???%'
     }
     percent_text.classList.add('percent')
