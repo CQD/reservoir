@@ -1089,7 +1089,7 @@ function mapDraw() {
   // 水庫
   Object.keys(reservoir_locations).forEach(name => {
     const [x, y] = reservoir_locations[name]
-    const res_circle = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+    const res_circle = mapdoc.getElementById(name) || document.createElementNS("http://www.w3.org/2000/svg", "circle")
 
     const base_radius = 4
     const radius = base_radius + Math.sqrt(reservoir_capacity[name]) / 13
@@ -1110,8 +1110,9 @@ function mapDraw() {
   })
 
   Object.keys(reservoir_locations).forEach(name => {
+    const text_ele_id = `${name}_text`
     const [x, y] = reservoir_locations[name]
-    const res_text = document.createElementNS("http://www.w3.org/2000/svg", "text")
+    const res_text = mapdoc.getElementById(text_ele_id) || document.createElementNS("http://www.w3.org/2000/svg", "text")
 
     let fill_rate = 0.0
     if (reservoir_capacity[name]) {
@@ -1129,7 +1130,7 @@ function mapDraw() {
     res_text.textContent = `${name} ${(fill_rate*100).toFixed(1)}%`
     res_text.setAttribute('x', Math.min(x + x_offset, 370))
     res_text.setAttribute('y', Math.max(y + y_offset, 30))
-    res_text.setAttribute('id', `${name}_text`)
+    res_text.setAttribute('id', text_ele_id)
     reses.append(res_text)
 
     if (["翡翠水庫", "石門水庫", "德基水庫", "日月潭水庫", "曾文水庫"].includes(name)) {
@@ -1348,7 +1349,6 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
 })
 .then(() => {
   redraw()
-  mapDraw()
   if (window.location.hash) {
     window.location = window.location
   }
