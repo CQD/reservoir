@@ -27,8 +27,8 @@ UPDATE_INTERVAL = 3600
 UPDATE_TIMER: Timer = None
 
 
-# CURR_DATA[{水庫名稱}] = [最大蓄水量, 目前蓄水量]
-CURR_DATA: dict[str, list[float]] = {}
+# CURR_DATA[{水庫名稱}] = [日期, 最大蓄水量, 目前蓄水量]
+CURR_DATA: dict[str, tuple[str, float, float]] = {}
 TSV_CURR: str = ''
 
 def load_tsv_files():
@@ -50,8 +50,10 @@ def load_tsv_files():
 def tsv_to_curr_data(tsv: str):
     global TSV_CURR
 
-    now = datetime.now(tz=TPE_TIMEZONE)
-    delta_7 = timedelta(days=7)
+    # 如果資料超過 14 天，不把它納入目前蓄水量的計算（資料久未更新？）
+    # 不過最大蓄水量則是有最新數字就拿來用
+    fourteen_days_ago_str = (datetime.now(TPE_TIMEZONE) - timedelta(days=14)).strftime('%Y-%m-%d')
+
     for line in tsv.split('\n'):
         fields = line.split('\t')
 
@@ -60,20 +62,19 @@ def tsv_to_curr_data(tsv: str):
 
         name, max, curr, dt_str = fields
 
-        dt = datetime.strptime(dt_str, '%Y-%m-%d').astimezone(tz=TPE_TIMEZONE)
-        too_old = now - dt > delta_7
-
         max_f = float(max)
         curr_f = float(curr)
 
         if name not in CURR_DATA:
-            CURR_DATA[name] = [-1.0, -1.0]
-        if max_f > 0:
-            CURR_DATA[name][0] = max_f
-        if curr_f > 0 and not too_old:
-            CURR_DATA[name][1] = curr_f
+            CURR_DATA[name] = [fourteen_days_ago_str, -1.0, -1.0]
 
-    TSV_CURR = '\n'.join(f"{name}\t{max}\t{curr}" for name, (max, curr) in CURR_DATA.items())
+        if max_f > 0:
+            CURR_DATA[name][1] = max_f
+        if curr_f > 0 and dt_str > CURR_DATA[name][0]:
+            CURR_DATA[name][0] = dt_str
+            CURR_DATA[name][2] = curr_f
+
+    TSV_CURR = '\n'.join(f"{name}\t{max}\t{curr}" for name, (_, max, curr) in CURR_DATA.items())
 
 
 def livespan(app: FastAPI):
