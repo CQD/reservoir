@@ -76,8 +76,14 @@ class ReservoirCrawler:
         return document
 
 
-    def fetch(self, date: Optional[date]=None):
+    def fetch(
+        self,
+        date: date | None=None,
+        fallback_range: int=3,
+        carried_result: dict[str, tuple[float, float]] | None=None,
+    ) -> dict[str, tuple[float, float]]:
         today = date if date else datetime.now(ZoneInfo("Asia/Taipei")).date()
+        result = carried_result or {}
 
         # init form data
         if not self.form_inputs:
@@ -97,8 +103,6 @@ class ReservoirCrawler:
         trs = document('#ctl00_cphMain_gvList tr')
 
         # 把拉到的資料中有值的水庫抓出來
-        result: Dict[str, Tuple[float, float]] = {}
-
         def floater(ele: HtmlElement):
             str_val = str(ele.text).replace('--', '').replace(',', '')
             str_val = str_val or '-1'
@@ -114,21 +118,21 @@ class ReservoirCrawler:
             if name not in RESERVOIRS:
                 continue
 
-            capacity = floater(tds[1])
-            current = floater(tds[9])
-            if capacity <=0 and current <= 0:
-                continue
+            old_capacity, old_current = result.get(name, (-1.0, -1.0))
+            capacity = old_capacity if old_capacity > 0 else floater(tds[1])
+            current = old_current if old_current > 0 else floater(tds[9])
 
             result[name] = (capacity, current)
 
         # 數量不夠，有的今天還沒更新，拉昨天的資料
-        if len(result) < len(RESERVOIRS) and date is None:
+        resivor_missing = {name for name in RESERVOIRS if result.get(name, (-1.0, -1.0))[1] <= 0}
+
+        if resivor_missing and fallback_range > 0:
             yesterday = today - timedelta(days=1)
-            logger.warning(" %s 的資料數量不夠，拉 %s 的資料", today, yesterday)
-            prev_result = self.fetch(yesterday)
-            for name, (capacity, current) in prev_result.items():
-                if name not in result:
-                    result[name] = (capacity, current)
+            logger.warning(" %s 的資料數量不夠，拉 %s 的資料（缺：%s）", today, yesterday, ", ".join(resivor_missing))
+            result = self.fetch(yesterday, fallback_range - 1, carried_result=result)
+        elif resivor_missing:
+            logger.warning(" %s 的資料數量不夠，缺：%s", today, ", ".join(resivor_missing))
 
         return result
 
