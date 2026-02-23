@@ -50,9 +50,11 @@ def load_tsv_files():
 def tsv_to_curr_data(tsv: str):
     global TSV_CURR
 
-    # 如果資料超過 14 天，不把它納入目前蓄水量的計算（資料久未更新？）
+    now = datetime.now(TPE_TIMEZONE)
+
+    # 如果資料超過 30 天，不把它納入目前蓄水量的計算（資料久未更新？）
     # 但是最大蓄水量的資料不受此限制，避免不必要的分母錯誤
-    fourteen_days_ago_str = (datetime.now(TPE_TIMEZONE) - timedelta(days=14)).strftime('%Y-%m-%d')
+    thirty_days_ago_str = (now - timedelta(days=30)).strftime('%Y-%m-%d')
 
     for line in tsv.split('\n'):
         fields = line.split('\t')
@@ -71,7 +73,7 @@ def tsv_to_curr_data(tsv: str):
         if line_max_f > 0:
             c_max_f = line_max_f
 
-        if line_curr_f > 0 and dt_str >= fourteen_days_ago_str:
+        if line_curr_f > 0 and dt_str >= thirty_days_ago_str:
             c_curr_f = line_curr_f
             c_dt_str = dt_str
 
