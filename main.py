@@ -51,8 +51,10 @@ def tsv_to_curr_data(tsv: str):
     global TSV_CURR
 
     # 如果資料超過 14 天，不把它納入目前蓄水量的計算（資料久未更新？）
-    # 不過最大蓄水量則是有最新數字就拿來用
     fourteen_days_ago_str = (datetime.now(TPE_TIMEZONE) - timedelta(days=14)).strftime('%Y-%m-%d')
+
+    def good_cnt(a: int, b: int):
+        return sum(1 for val in (a, b) if val > 0)
 
     for line in tsv.split('\n'):
         fields = line.split('\t')
@@ -61,18 +63,25 @@ def tsv_to_curr_data(tsv: str):
             continue
 
         name, max, curr, dt_str = fields
+        if dt_str < fourteen_days_ago_str:
+            continue
 
         max_f = float(max)
         curr_f = float(curr)
 
-        if name not in CURR_DATA:
-            CURR_DATA[name] = [fourteen_days_ago_str, -1.0, -1.0]
+        c_dt_str, c_max_f, c_curr_f = CURR_DATA.get(name, ("1970-01-01", -1.0, -1.0))
 
-        if max_f > 0:
-            CURR_DATA[name][1] = max_f
-        if curr_f > 0 and dt_str > CURR_DATA[name][0]:
-            CURR_DATA[name][0] = dt_str
-            CURR_DATA[name][2] = curr_f
+        new_line_good_cnt = good_cnt(max_f, curr_f)
+        curr_line_good_cnt = good_cnt(c_max_f, c_curr_f)
+
+        # 如果有值的資料比原本多，或者是資料一樣多但日期更新了，就更新資料
+        # 如果新資料只有 current 有值，也是更新，但把兩筆資料合併成一筆
+        if new_line_good_cnt > curr_line_good_cnt:
+            CURR_DATA[name] = (dt_str, max_f, curr_f)
+        elif new_line_good_cnt == curr_line_good_cnt and dt_str > c_dt_str:
+            CURR_DATA[name] = (dt_str, max_f, curr_f)
+        elif curr_f > 0 and dt_str >= fourteen_days_ago_str:
+            CURR_DATA[name] = (dt_str, max_f if max_f > 0 else c_max_f, curr_f)
 
     TSV_CURR = '\n'.join(f"{name}\t{max}\t{curr}" for name, (_, max, curr) in CURR_DATA.items())
 
@@ -178,7 +187,6 @@ def fetch_new_data():
     logger.warning("[fetch_new_data] 固定資料點已更新")
 
     # 拉最新的資料
-    today_str = datetime.now(TPE_TIMEZONE).strftime('%Y-%m-%d')
     crawed_data = crawer.fetch()
 
     if len(crawed_data) <= 0:
@@ -186,7 +194,7 @@ def fetch_new_data():
         return
 
     lines = [f"{name}\t{max}\t{curr}\t{today_str}\n"
-                for name, (max, curr) in crawed_data.items()]
+                for name, (max, curr, today_str) in crawed_data.items()]
     TSV_LATEST = "".join(lines)
 
     # 紀錄目前蓄水量/最大蓄水量

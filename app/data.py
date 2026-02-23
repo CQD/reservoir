@@ -14,18 +14,18 @@ import requests
 logger = logging.getLogger(__name__)
 
 RESERVOIR_GROUPS = {
-    "北部": {"翡翠水庫", "石門水庫", "寶山第二水庫", "新山水庫", "大埔水庫", "寶山水庫", "西勢水庫"},
-    "中部": {"德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"},
-    "南部": {"曾文水庫", "南化水庫", "烏山頭水庫", "牡丹水庫", "仁義潭水庫", "阿公店水庫", "白河水庫", "蘭潭水庫", "鳳山水庫", "澄清湖水庫", "鏡面水庫"},
-    "外離島": {"成功水庫","興仁水庫","太湖水庫","田埔水庫","金沙水庫","后沃水庫",},
+    "北部": ["翡翠水庫", "石門水庫", "寶山第二水庫", "新山水庫", "大埔水庫", "寶山水庫", "西勢水庫"],
+    "中部": ["德基水庫", "日月潭水庫", "鯉魚潭水庫", "湖山水庫", "霧社水庫", "永和山水庫", "明德水庫", "石岡壩"],
+    "南部": ["曾文水庫", "南化水庫", "烏山頭水庫", "牡丹水庫", "仁義潭水庫", "阿公店水庫", "白河水庫", "蘭潭水庫", "鳳山水庫", "澄清湖水庫", "鏡面水庫"],
+    "外離島": ["成功水庫","興仁水庫","太湖水庫","田埔水庫","金沙水庫","后沃水庫",],
 }
 
-RESERVOIRS = {
+RESERVOIRS = [
     *RESERVOIR_GROUPS['北部'],
     *RESERVOIR_GROUPS['中部'],
     *RESERVOIR_GROUPS['南部'],
     *RESERVOIR_GROUPS['外離島'],
-}
+]
 
 
 class ReservoirCrawler:
@@ -81,8 +81,16 @@ class ReservoirCrawler:
         date: date | None=None,
         fallback_range: int=3,
         carried_result: dict[str, tuple[float, float]] | None=None,
-    ) -> dict[str, tuple[float, float]]:
+    ) -> dict[str, tuple[float, float, str]]:
+        """
+        以 date 為主，拉指定日期的資料，如果資料不完整（有水庫的蓄水量 <= 0），就往前推一天再拉一次，最多往前推 fallback_range 天。
+        carried_result 是往前推的過程中撈到的資料，會帶入下一次 fetch 的結果裡面，避免重複撈同一天的資料
+
+        return: {水庫名稱: (最大蓄水量, 目前蓄水量, 日期)}
+        """
         today = date if date else datetime.now(ZoneInfo("Asia/Taipei")).date()
+        today_str = today.strftime('%Y-%m-%d')
+
         result = carried_result or {}
 
         # init form data
@@ -118,14 +126,20 @@ class ReservoirCrawler:
             if name not in RESERVOIRS:
                 continue
 
-            old_capacity, old_current = result.get(name, (-1.0, -1.0))
-            capacity = old_capacity if old_capacity > 0 else floater(tds[1])
-            current = old_current if old_current > 0 else floater(tds[9])
+            c_capacity, c_current, c_dt_str = result.get(name, (-1.0, -1.0, today_str))
 
-            result[name] = (capacity, current)
+            if c_capacity <= 0 or c_current <= 0:
+                # carried 資料有缺漏，嘗試更新資料
+                new_capacity = floater(tds[1])
+                new_current = floater(tds[9])
+
+                c_filled_cnt = sum(1 for val in (c_capacity, c_current) if val > 0)
+                filled_cnt = sum(1 for val in (new_capacity, new_current) if val > 0)
+                if filled_cnt > c_filled_cnt:
+                    result[name] = (new_capacity, new_current, today_str)
 
         # 數量不夠，有的今天還沒更新，拉昨天的資料
-        resivor_missing = {name for name in RESERVOIRS if result.get(name, (-1.0, -1.0))[1] <= 0}
+        resivor_missing = {name for name in result if result.get(name, (-1.0, -1.0, today_str))[1] <= 0}
 
         if resivor_missing and fallback_range > 0:
             yesterday = today - timedelta(days=1)
@@ -145,15 +159,13 @@ class ReservoirCrawler:
             for m in range(1, 13):
                 for d in (1, 8, 15, 22):
                     cursor_dt = date(y, m, d)
-                    cursor_dt_str = cursor_dt.strftime('%Y-%m-%d')
-
                     if cursor_dt < begin_date:
                         continue
                     if cursor_dt >= end_date:
                         break
 
-                    lines.extend(f"{name}\t{max}\t{curr}\t{cursor_dt_str}\n" \
-                                 for name, (max, curr) in self.fetch(cursor_dt).items())
+                    lines.extend(f"{name}\t{max}\t{curr}\t{dt_str}\n" \
+                                 for name, (max, curr, dt_str) in self.fetch(cursor_dt).items())
 
         return "".join(lines)
 
