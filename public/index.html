@@ -1329,10 +1329,22 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
     let [reservoir, capacity, current, ymd] = line.split("\t")
     let year = ymd.split('-')[0]
 
-    // 做一筆假資料，讓 {year}-12-22 在圖上會連到 {year+1}-01-01
-    if (`${year}-01-01` == ymd && year > START_YEAR) {
-      let prev_ymd = `${year-1}-12-31`
-      reservoir_history[reservoir][year-1][prev_ymd] = current
+    // 做假資料，讓年頭年尾可以連起來
+    if (
+        `${year}-01-01` == ymd
+        && year > START_YEAR
+        && reservoir_history[reservoir]
+        && reservoir_history[reservoir][year-1]
+        && !reservoir_history[reservoir][year-1][`${year-1}-12-31`]
+    ) {
+      reservoir_history[reservoir][year-1][`${year-1}-12-31`] = current
+    }
+    else if ([`${year}-12-31`, `${year}-12-30`].includes(ymd) && reservoir_history[reservoir]) {
+      const next_year = parseInt(year) + 1
+      reservoir_history[reservoir][next_year] = reservoir_history[reservoir][next_year] || {}
+      if (!reservoir_history[reservoir][next_year][`${next_year}-01-01`]) {
+        reservoir_history[reservoir][next_year][`${next_year}-01-01`] = current
+      }
     }
 
     reservoir_history[reservoir] = reservoir_history[reservoir] || {}
