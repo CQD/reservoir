@@ -51,10 +51,8 @@ def tsv_to_curr_data(tsv: str):
     global TSV_CURR
 
     # 如果資料超過 14 天，不把它納入目前蓄水量的計算（資料久未更新？）
+    # 但是最大蓄水量的資料不受此限制，避免不必要的分母錯誤
     fourteen_days_ago_str = (datetime.now(TPE_TIMEZONE) - timedelta(days=14)).strftime('%Y-%m-%d')
-
-    def good_cnt(a: int, b: int):
-        return sum(1 for val in (a, b) if val > 0)
 
     for line in tsv.split('\n'):
         fields = line.split('\t')
@@ -63,25 +61,22 @@ def tsv_to_curr_data(tsv: str):
             continue
 
         name, max, curr, dt_str = fields
-        if dt_str < fourteen_days_ago_str:
-            continue
 
-        max_f = float(max)
-        curr_f = float(curr)
+        line_max_f = float(max)
+        line_curr_f = float(curr)
+
 
         c_dt_str, c_max_f, c_curr_f = CURR_DATA.get(name, ("1970-01-01", -1.0, -1.0))
 
-        new_line_good_cnt = good_cnt(max_f, curr_f)
-        curr_line_good_cnt = good_cnt(c_max_f, c_curr_f)
+        if line_max_f > 0:
+            c_max_f = line_max_f
 
-        # 如果有值的資料比原本多，或者是資料一樣多但日期更新了，就更新資料
-        # 如果新資料只有 current 有值，也是更新，但把兩筆資料合併成一筆
-        if new_line_good_cnt > curr_line_good_cnt:
-            CURR_DATA[name] = (dt_str, max_f, curr_f)
-        elif new_line_good_cnt == curr_line_good_cnt and dt_str > c_dt_str:
-            CURR_DATA[name] = (dt_str, max_f, curr_f)
-        elif curr_f > 0 and dt_str >= fourteen_days_ago_str:
-            CURR_DATA[name] = (dt_str, max_f if max_f > 0 else c_max_f, curr_f)
+        if line_curr_f > 0 and dt_str >= fourteen_days_ago_str:
+            c_curr_f = line_curr_f
+            c_dt_str = dt_str
+
+        CURR_DATA[name] = (c_dt_str, c_max_f, c_curr_f)
+
 
     TSV_CURR = '\n'.join(f"{name}\t{max}\t{curr}" for name, (_, max, curr) in CURR_DATA.items())
 
