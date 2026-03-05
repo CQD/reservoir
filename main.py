@@ -165,6 +165,13 @@ async def curr():
     return PlainTextResponse(TSV_CURR, headers=headers)
 
 
+
+@app.get("/api/CURR_DATA")
+async def curr_data():
+    return CURR_DATA
+
+
+
 def fetch_new_data():
     global TSV_SUPPLEMENTAL, TSV_LATEST, TSV_CURR
 
