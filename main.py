@@ -212,4 +212,4 @@ def fetch_new_data():
 if __name__ == '__main__':
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     import uvicorn
-    uvicorn.run("main:app", port=80, host='0.0.0.0', reload=True, log_level='debug')
+    uvicorn.run("main:app", port=8080, host='0.0.0.0', reload=True, log_level='debug')
