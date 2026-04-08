@@ -713,6 +713,8 @@ function groupChart(group_data) {
   svg.setAttribute("viewBox", `0 0 ${width} ${height}`)
 
   function makeG(name, size, fill_rate) {
+    fill_rate = Math.min(fill_rate, 1);  // 正規化，但 <0 會當作沒資料處理，不能設定 lower bound
+
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
     size = Math.pow(size, 0.5)
