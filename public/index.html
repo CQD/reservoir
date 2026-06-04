@@ -453,7 +453,6 @@ gtag('config', 'G-93370QFS9E');
 <header>
 <a name="top"></a>
 <h1>台灣水庫即時水情與歷年統計</h1>
-<p id="desc">資料更新中</p>
 </header>
 
 <div id="wave">
@@ -1310,7 +1309,6 @@ fetch(`/api/curr.tsv?v=${assetver()}`)
 
   mapDraw();
   drawSummary();
-  document.getElementById('desc').textContent = `資料更新時間：${datatime}`;
 })
 .catch(e => console.error(e));
 
@@ -1357,8 +1355,6 @@ fetch(`/api/reservoir-history.tsv?v=${assetver()}`)
       reservoir_current[reservoir] = current
     }
   }
-
-  document.getElementById('desc').textContent = `資料更新時間：${datatime}`
 })
 .then(() => {
   redraw()
