@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>台灣水庫即時水情與歷年統計</title>
-<meta name="description" content="提供台灣水庫的即時水情狀況、水情燈號、以及 2003 年之後的水庫水位歷史圖表">
+<meta name="description" content="提供台灣水庫的即時水情狀況、對照兩日降雨累積圖、以及 2003 年之後的水庫水位歷史圖表">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=1">
 <link rel="icon" type="image/png" href="favicon.png" >
 <meta name="theme-color" content="#03a">
@@ -57,12 +57,12 @@ header #desc{
 
 #summary_wrapper{
   display:grid;
-  grid-template-columns: 1fr 3fr;
+  grid-template-columns: 1.2fr 2.8fr;
   border-bottom:2px solid #333;
 }
 #summary{
   padding:0 1rem 2rem;
-  min-height: min(43vw, 765px);
+  min-height: min(43vw, 600px);
 }
 
 #main{
@@ -484,9 +484,9 @@ gtag('config', 'G-93370QFS9E');
 
 <a id="link_to_top" href="#top">⇧</a>
 <footer>
-<p>資料來源：經濟部水利署<a href="https://fhy.wra.gov.tw/fhyv2/monitor/reservoir">水庫蓄水統計表</a>與<a href="https://www.wra.gov.tw/EarlyWarning.aspx?n=18804">水情燈號</a>
+<p>資料來源：經濟部水利署<a href="https://fhy.wra.gov.tw/fhyv2/monitor/reservoir">水庫蓄水統計表</a>、<a href="https://www.cwa.gov.tw/V8/C/P/Rainfall/Rainfall_QZJ.html">氣象局累積雨量圖</a></p>
 
-<p>水庫資料大多為各水庫管理單位手動輸入，實際水位更新時間會有落差</p>
+<p>水庫資料大多為各水庫管理單位手動輸入，實際水位更新時間會有落差；雨量圖為氣象局的兩日累計</p>
 
 <p><del>抄襲</del>參考了<a href="https://www.cw.com.tw/graphics/drought-2023/">天下雜誌水情專題</a>的圖表設計</p>
 
@@ -516,51 +516,38 @@ const reservoir_group = {
 }
 
 // 位置是肉眼比對拉出來，不是很準
+// 換 tw.svg 地圖後，本島用各縣市 bbox 中心擬合仿射變換換算；離島（澎湖/金門/馬祖）另外對位
 const reservoir_locations = {
-    "翡翠水庫":[429,110],
-    "石門水庫":[343,138],
-    "寶山第二水庫":[281,163],
-    "新山水庫":[446,47],
-    "大埔水庫":[266,176],
-    "寶山水庫":[277,156.6],
-    "德基水庫":[313,295],
-    "日月潭水庫":[246,413],
-    "鯉魚潭水庫":[213,274],
-    "湖山水庫":[165,462],
-    "霧社水庫":[305,365],
-    "永和山水庫":[248,187],
-    "明德水庫":[234,201],
-    "曾文水庫":[155,584],
-    "南化水庫":[144,635],
-    "烏山頭水庫":[101,600],
-    "牡丹水庫":[203,900],
-    "仁義潭水庫":[139,530],
-    "阿公店水庫":[97,715],
-    "白河水庫":[130,561],
-    "蘭潭水庫":[129,527],
-    "鳳山水庫":[104,796],
-    "澄清湖水庫":[95,758],
-    "鏡面水庫":[130,645],
-    "成功水庫":[70,138],
-    "興仁水庫":[63,143],
-    "太湖水庫":[75,29],
-    "田埔水庫":[82,23],
-    "金沙水庫":[72,17],
-    "后沃水庫":[145,37],
-}
-
-// 水情燈號是不是沒有 API 可以抓...
-// 好像也沒有好爬的官方頁面
-// 水利署： https://www.wra.gov.tw/EarlyWarning.aspx?n=18804
-ALERTS = {
-  // 紅燈
-  "hsl(0, 80%, 75%)": [],
-  // 橘燈
-  "hsl(30, 80%, 75%)": [],
-  // 黃燈
-  "hsl(60, 80%, 75%)": [],
-  // 綠燈
-  "hsl(90, 80%, 75%)": [],
+    "翡翠水庫":[454.5,74.6],
+    "石門水庫":[388,93.8],
+    "寶山第二水庫":[340,111.1],
+    "新山水庫":[467.7,30.7],
+    "大埔水庫":[328.4,120.1],
+    "寶山水庫":[336.9,106.6],
+    "德基水庫":[364.8,203.3],
+    "日月潭水庫":[312.9,285.4],
+    "鯉魚潭水庫":[287.4,188.3],
+    "湖山水庫":[250.2,319.2],
+    "霧社水庫":[358.6,252.1],
+    "永和山水庫":[314.5,127.7],
+    "明德水庫":[303.6,137.4],
+    "曾文水庫":[242.5,404.3],
+    "南化水庫":[234,439.9],
+    "烏山頭水庫":[200.7,415.3],
+    "牡丹水庫":[279.6,625],
+    "仁義潭水庫":[230.1,366.6],
+    "阿公店水庫":[197.6,495.5],
+    "白河水庫":[223.2,388.2],
+    "蘭潭水庫":[222.4,364.5],
+    "鳳山水庫":[203,552.1],
+    "澄清湖水庫":[196.1,525.5],
+    "鏡面水庫":[223.2,446.8],
+    "成功水庫":[37.8,348.8],
+    "興仁水庫":[34.2,351.2],
+    "太湖水庫":[73.6,175.2],
+    "田埔水庫":[78.5,171],
+    "金沙水庫":[71.5,166.8],
+    "后沃水庫":[100,61],
 }
 
 function setCookie(name, value, days) {
@@ -1068,6 +1055,79 @@ function reservoirHeatmapChart(data, max) {
   return svg
 }
 
+function rainfallURL() {
+  // CWA 整點圖不是馬上產生，給 30 分鐘的緩衝時間
+  const tpe = new Date(Date.now() - 1800 * 1000).toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' })
+  return `https://www.cwa.gov.tw/Data/rainfall/${tpe.slice(0, 10)}_${tpe.slice(11, 13)}00.QZK8.jpg`
+}
+
+// 中央氣象局累積雨量圖：用 30% 透明度疊在地圖上，遮罩成台灣形狀去背，水庫標記仍在最上層
+// 拉圖失敗就維持沒有疊圖的樣子
+let rainfall_overlay_added = false
+function addRainfallOverlay(mapdoc, reses) {
+  if (rainfall_overlay_added) return
+  const SVGNS = "http://www.w3.org/2000/svg"
+  const root = mapdoc.querySelector('svg')
+  const land_group = root && root.querySelector('g[stroke="#39c"]')
+  if (!root || !land_group || !reses) return
+  rainfall_overlay_added = true
+
+  // 雨量圖（880x880）像素座標 → tw.svg viewBox 座標：svg = S*px + (OX, OY)，肉眼比對 CWA 地圖對位
+  const RAINFALL_URL = rainfallURL()
+  const S = 0.998, OX = -36.6, OY = -123.7, SRC = 880
+
+  // 先預載一次：成功才疊圖，失敗（404 / 擋外連 / 斷網）就維持沒有疊圖的樣子
+  const probe = new Image()
+  probe.onerror = () => {}
+  probe.onload = () => {
+    if (mapdoc.getElementById('rainfall_overlay')) return
+
+    // 遮罩：複製陸地輪廓填白，當 luminance mask（白=顯示，其餘=去背）
+    let defs = root.querySelector('defs')
+    if (!defs) { defs = mapdoc.createElementNS(SVGNS, 'defs'); root.insertBefore(defs, root.firstChild) }
+    const mask = mapdoc.createElementNS(SVGNS, 'mask')
+    mask.setAttribute('id', 'rainfall_mask')
+    const mask_land = land_group.cloneNode(true)
+    mask_land.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'))  // 別跟本尊縣市 id 撞到，避免 JS 異常
+    mask_land.setAttribute('fill', '#fff')
+    mask_land.setAttribute('stroke', '#fff')
+    mask_land.setAttribute('stroke-width', '2')
+    mask.appendChild(mask_land)
+    defs.appendChild(mask)
+
+    // 雨量圖本體
+    const img = mapdoc.createElementNS(SVGNS, 'image')
+    img.setAttribute('id', 'rainfall_overlay')
+    img.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', RAINFALL_URL)
+    img.setAttribute('href', RAINFALL_URL)
+    img.setAttribute('x', OX)
+    img.setAttribute('y', OY)
+    img.setAttribute('width', SRC * S)
+    img.setAttribute('height', SRC * S)
+    img.setAttribute('preserveAspectRatio', 'none')
+    img.setAttribute('opacity', '0.3')
+    img.setAttribute('mask', 'url(#rainfall_mask)')
+    img.style.pointerEvents = 'none'
+
+    root.insertBefore(img, reses)  // 插在 #reservoirs 之前 → 水庫標記在雨量圖上方
+
+    // 圖例：疊圖成功才標示底色意義，擺右下角外海空白處；inline style 覆寫 svg 預設的 font-size:0
+    const label = mapdoc.createElementNS(SVGNS, 'text')
+    label.setAttribute('id', 'rainfall_label')
+    label.setAttribute('x', 20)
+    label.setAttribute('y', 670)
+    label.setAttribute('text-anchor', 'start')
+    label.textContent = '地圖底色為兩日累積雨量'
+    label.style.fontSize = '16px'
+    label.style.fill = 'rgba(0,0,0,.5)'
+    label.style.stroke = 'rgba(255,255,255,.5)'  // 白描邊 + 繼承的 paint-order:stroke，墊在字底下確保可讀
+    label.style.strokeWidth = '3px'
+    label.style.pointerEvents = 'none'
+    root.appendChild(label)  // append 到最後 → 最上層，不會被雨量圖蓋住
+  }
+  probe.src = RAINFALL_URL
+}
+
 // 畫地圖區塊的 function，有些時候會因為等待其他資料而重跑
 function mapDraw() {
   const map_ele = document.getElementById('twmap')
@@ -1079,6 +1139,9 @@ function mapDraw() {
     map_ele.addEventListener('load', mapDraw)
     return
   }
+
+  // 疊上中央氣象局累積雨量圖（不需等水庫資料，SVG 一好就疊）
+  addRainfallOverlay(mapdoc, reses)
 
   // 如果資料還沒載入，等一下重跑一次
   if (Object.keys(reservoir_capacity).length == 0) {
@@ -1137,16 +1200,6 @@ function mapDraw() {
       res_text.classList.add('large')
     }
 
-  })
-
-  // 水情燈號
-  Object.keys(ALERTS).forEach(color => {
-    ALERTS[color].forEach(region_name => {
-      const region = map_ele.contentDocument.getElementById(region_name)
-      if (region) {
-        region.setAttribute('fill', color)
-      }
-    })
   })
 }
 
