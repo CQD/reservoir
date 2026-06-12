@@ -1056,9 +1056,9 @@ function reservoirHeatmapChart(data, max) {
 }
 
 function rainfallURL() {
-  // CWA 整點圖不是馬上產生，給 30 分鐘的緩衝時間
-  const tpe = new Date(Date.now() - 1800 * 1000).toLocaleString('sv-SE', { timeZone: 'Asia/Taipei' })
-  return `https://www.cwa.gov.tw/Data/rainfall/${tpe.slice(0, 10)}_${tpe.slice(11, 13)}00.QZK8.jpg`
+  // 改從本站拿（server 端有記憶體快取、整點圖的時間差也在 server 處理），
+  // 不再讓每個訪客直接打氣象局
+  return '/api/rainfall.jpg'
 }
 
 // 中央氣象局累積雨量圖：用 30% 透明度疊在地圖上，遮罩成台灣形狀去背，水庫標記仍在最上層

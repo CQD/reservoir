@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+import asyncio
 import hashlib
 import logging
 from pathlib import Path
@@ -8,7 +9,8 @@ from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from starlette.responses import FileResponse, PlainTextResponse
+from starlette.responses import FileResponse, PlainTextResponse, Response
+import requests
 
 from app.data import ReservoirCrawler, RESERVOIR_GROUPS
 
@@ -30,6 +32,14 @@ UPDATE_TIMER: Timer = None
 # CURR_DATA[{水庫名稱}] = [日期, 最大蓄水量, 目前蓄水量]
 CURR_DATA: dict[str, tuple[str, float, float]] = {}
 TSV_CURR: str = ''
+
+
+# ── 中央氣象局兩日累積雨量圖 ───────────────────────────────
+# server 端在記憶體快取一份，前端只跟本站拿；避免每個訪客都直接打氣象局
+RAINFALL_REFRESH_INTERVAL = 600  # 每 10 分鐘檢查一次有沒有更新的整點圖
+RAINFALL_TIMER: Timer = None
+# (圖片 bytes, 來源網址, etag, 抓取時間)；None 表示還沒抓到任何一張
+RAINFALL_CACHE: tuple[bytes, str, str, float] | None = None
 
 def load_tsv_files():
     global TSV_FROM_FILE
@@ -83,8 +93,65 @@ def tsv_to_curr_data(tsv: str):
     TSV_CURR = '\n'.join(f"{name}\t{max}\t{curr}" for name, (_, max, curr) in CURR_DATA.items())
 
 
+def _cwa_rainfall_urls(hours_back: int = 6):
+    """從目前整點往回推，產生氣象局雨量圖的候選網址（新→舊）。"""
+    now = datetime.now(TPE_TIMEZONE).replace(minute=0, second=0, microsecond=0)
+    for back in range(hours_back + 1):
+        dt = now - timedelta(hours=back)
+        yield f"https://www.cwa.gov.tw/Data/rainfall/{dt:%Y-%m-%d_%H}00.QZK8.jpg"
+
+
+def refresh_rainfall_cache():
+    """去氣象局抓最新的整點雨量圖更新快取。只有背景緒會呼叫，是唯一對外連氣象局的地方。
+
+    抓不到（整點圖還沒產生／斷網／被擋）就保留舊快取、不清空，
+    避免「舊圖過期但新圖還沒到」造成空窗。
+    """
+    global RAINFALL_CACHE
+
+    cached_url = RAINFALL_CACHE[1] if RAINFALL_CACHE else None
+
+    for url in _cwa_rainfall_urls():
+        # 走到目前手上這張了，再往回只會更舊，不用抓
+        if url == cached_url:
+            return
+
+        try:
+            resp = requests.get(url, timeout=15, headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+                "Referer": "https://www.cwa.gov.tw/V8/C/P/Rainfall/Rainfall_QZJ.html",
+            })
+        except Exception:
+            logger.exception("[rainfall] 抓取 %s 失敗", url)
+            continue
+
+        # 整點圖還沒產生會是 404；也用 JPEG magic 擋掉被導去 HTML 錯誤頁的情況
+        if resp.status_code != 200 or resp.content[:3] != b"\xff\xd8\xff" or len(resp.content) < 1000:
+            continue
+
+        etag = hashlib.md5(resp.content).hexdigest()
+        RAINFALL_CACHE = (resp.content, url, etag, time.time())
+        logger.warning("[rainfall] 已更新快取：%s（%d bytes）", url, len(resp.content))
+        return
+
+    if RAINFALL_CACHE is None:
+        logger.warning("[rainfall] 目前還沒有任何可用的雨量圖")
+
+
+def rainfall_updater():
+    global RAINFALL_TIMER
+
+    try:
+        refresh_rainfall_cache()
+    except Exception:
+        logger.exception("[rainfall] 更新時發生未預期的錯誤")
+
+    RAINFALL_TIMER = Timer(RAINFALL_REFRESH_INTERVAL, rainfall_updater)
+    RAINFALL_TIMER.start()
+
+
 def livespan(app: FastAPI):
-    global UPDATE_TIMER
+    global UPDATE_TIMER, RAINFALL_TIMER
 
     logger.warning("[startup] 從檔案載入歷史資料")
     load_tsv_files()
@@ -113,9 +180,16 @@ def livespan(app: FastAPI):
     UPDATE_TIMER.start()
     logger.warning("[startup] 排定更新資料")
 
+    # 雨量圖快取：開機後盡快灌第一張，之後每 RAINFALL_REFRESH_INTERVAL 秒更新一次
+    RAINFALL_TIMER = Timer(0.1, rainfall_updater)
+    RAINFALL_TIMER.start()
+    logger.warning("[startup] 排定更新雨量圖")
+
     yield
 
     UPDATE_TIMER.cancel()
+    if RAINFALL_TIMER:
+        RAINFALL_TIMER.cancel()
     logger.warning("[shutdown] 已關閉 updater")
 
 
@@ -170,6 +244,35 @@ async def curr():
 async def curr_data():
     return CURR_DATA
 
+
+@app.get("/api/rainfall.jpg")
+async def rainfall_jpg(request: Request):
+    # cold start 還沒抓到圖時，給背景緒幾秒把第一張灌進來，而不是馬上回 503
+    deadline = time.time() + 8
+    while RAINFALL_CACHE is None and time.time() < deadline:
+        await asyncio.sleep(0.2)
+
+    cache = RAINFALL_CACHE
+    if cache is None:
+        # 真的還沒有圖：前端 onerror 會維持沒有疊圖的樣子，別讓快取記住這個失敗
+        return Response(status_code=503, headers={"Cache-Control": "no-store"})
+
+    data, source_url, etag, fetched_at = cache
+
+    headers = {
+        # 邊緣（Cloudflare）/瀏覽器快取 10 分鐘；過期後先回舊圖再背景重新驗證，
+        # 萬一 origin 出錯還能續用舊圖一天 → 最大程度避免空窗/outage
+        "Cache-Control": "public, max-age=600, stale-while-revalidate=3600, stale-if-error=86400",
+        "ETag": etag,
+        "X-Rainfall-Source": source_url,
+        "X-Rainfall-Fetched": datetime.fromtimestamp(fetched_at, tz=TPE_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+    # 圖沒變就回 304，省下重傳
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+
+    return Response(content=data, media_type="image/jpeg", headers=headers)
 
 
 def fetch_new_data():
