@@ -1105,7 +1105,7 @@ function addRainfallOverlay(mapdoc, reses) {
     img.setAttribute('width', SRC * S)
     img.setAttribute('height', SRC * S)
     img.setAttribute('preserveAspectRatio', 'none')
-    img.setAttribute('opacity', '0.3')
+    img.setAttribute('opacity', '0.65')
     img.setAttribute('mask', 'url(#rainfall_mask)')
     img.style.pointerEvents = 'none'
 
@@ -1117,7 +1117,7 @@ function addRainfallOverlay(mapdoc, reses) {
     label.setAttribute('x', 20)
     label.setAttribute('y', 670)
     label.setAttribute('text-anchor', 'start')
-    label.textContent = '地圖底色為兩日累積雨量'
+    label.textContent = '地圖顏色為兩日累積雨量'
     label.style.fontSize = '16px'
     label.style.fill = 'rgba(0,0,0,.5)'
     label.style.stroke = 'rgba(255,255,255,.5)'  // 白描邊 + 繼承的 paint-order:stroke，墊在字底下確保可讀
