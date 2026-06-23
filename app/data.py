@@ -1,14 +1,9 @@
 import os
 import sys
-from urllib.parse import urlparse, parse_qs
-
-from datetime import datetime, date, timedelta
 import logging
-from typing import Dict, Optional, Tuple
+from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 
-from lxml.html import HtmlElement
-from pyquery import PyQuery as pq
 import requests
 
 logger = logging.getLogger(__name__)
@@ -29,143 +24,168 @@ RESERVOIRS = [
 
 
 class ReservoirCrawler:
-    url = 'https://fhy.wra.gov.tw/ReservoirPage_2011/StorageCapacity.aspx'
-    form_inputs: Dict[str, str] = {}
+    """從水利署新版 fhyv2 JSON API 抓各水庫即時水情。
 
-    def fetch_page(self, payload: Optional[dict]=None):
-        logger.warning("開始撈取資料，payload 為：%s", payload)
+    2026 年中水利署網站改版：舊的 ReservoirPage_2011/StorageCapacity.aspx
+    （ASP.NET WebForms 頁面）已 302 轉走，站台前面也加了 WAF，舊的「POST 表單
+    再解析 HTML」爬法只會拿到 WAF 的 Request Rejected 頁。新版資料改打 JSON API：
 
-        if payload is None:
-            payload = {}
+      GET /Api/v2/Reservoir/Station        各站基本資料（站號、站名、有效容量）
+      GET /Api/v2/Reservoir/Info/RealTime  各站即時水情（有效蓄水量、時間）
+      GET /Api/v2/Reservoir/Daily          各站昨日日報（即時抓不到時的備援）
 
-        payload = self.form_inputs | payload
+    三個端點都要帶前端寫死的 apikey header（少了瀏覽器常見的 Accept header
+    一樣會被 WAF 擋）。新版只提供「即時」與「昨日」兩種快照，沒有任意歷史日期
+    查詢，因此無法再像舊版那樣回頭補任意一天的固定資料點。
+    """
 
-        resp = requests.post(self.url, data=payload, headers={
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Referer": "https://fhy.wra.gov.tw/ReservoirPage_2011/StorageCapacity.aspx",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+    api_base = 'https://fhy.wra.gov.tw/Api/v2'
+
+    # 前端 app.js 編譯進去的公開金鑰（VUE_APP_API_KEY），所有訪客共用同一把。
+    api_key = 'd6dd3cd4-493f-43a3-92b1-8b2db217da96'
+
+    # 即時值超過這天數沒更新就視為缺漏（記 -1.0）。正常即時資料都是當天整點，
+    # 這只是擋掉某站資料卡在很久以前的情況。
+    STALE_DAYS = 14
+
+    # 新版 API 站名 → 本站沿用站名。「田浦水庫」其實才是正字，但歷史 TSV、
+    # 前端、地圖長年都用別字「田埔水庫」；抓進來時統一轉回舊名，免得同一個
+    # 水庫在歷史曲線上斷成兩條。
+    NAME_FROM_API = {
+        '田浦水庫': '田埔水庫',
+    }
+
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/124.0.0.0 Safari/537.36'
+            ),
+            # 少了 Accept / Accept-Language 會被站台的 WAF 當成非瀏覽器流量擋掉
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-TW,zh;q=0.9',
+            'Referer': 'https://fhy.wra.gov.tw/fhyv2/monitor/reservoir',
+            'apikey': self.api_key,
         })
-        html = resp.text
+        self._station_cache: dict[str, tuple[str, float]] | None = None
 
-        document = pq(html)
+    def _get(self, path: str) -> list[dict]:
+        resp = self.session.get(f'{self.api_base}/{path}', timeout=30)
+        resp.raise_for_status()
+        payload = resp.json()
+        data = payload.get('Data')
+        if not data:
+            raise RuntimeError(f"{path} 回應沒有 Data：{str(payload)[:200]}")
+        return data
 
-        self.form_inputs.clear()
-        fields = document('form#aspnetForm input')
+    def _stations(self) -> dict[str, tuple[str, float]]:
+        """回 {站號: (本站站名, 有效容量)}，只留本站關注的水庫。容量一天才更新
+        一次，同一個 crawler 生命週期內快取即可。"""
+        if self._station_cache is None:
+            out: dict[str, tuple[str, float]] = {}
+            for s in self._get('Reservoir/Station'):
+                name = self.NAME_FROM_API.get(s['StationName'], s['StationName'])
+                if name not in RESERVOIRS:
+                    continue
+                cap = s.get('EffectiveCapacity')
+                out[s['StationNo']] = (name, float(cap) if cap else -1.0)
+            self._station_cache = out
+        return self._station_cache
 
-        if len(fields) == 0:
-            logger.error("resp.status_code: %s", resp.status_code)
-            logger.error("resp.headers: %s", resp.headers)
-            logger.error("resp.text: %s", html)
-            raise RuntimeError("找不到 form#aspnetForm input")
-
-        for field in fields.items():
-            name = field.attr('name')
-            value = field.attr('value')
-            self.form_inputs[name] = value
-
-        script = document('script[src*=_TSM_HiddenField_]')
-        hf_url = urlparse(script.attr("src"))
-        hf_query = parse_qs(hf_url.query)
-
-        if '_TSM_CombinedScripts_' not in hf_query:
-            raise RuntimeError(f"script src 裡面沒有 _TSM_CombinedScripts_。 src 為：{script.attr('src')}")
-
-        self.form_inputs['ctl00_ctl02_HiddenField'] = hf_query['_TSM_CombinedScripts_'][0]
-
-        logger.warning("成功撈取資料")
-        return document
-
-
-    def fetch(
-        self,
-        date: date | None=None,
-        fallback_range: int=3,
-        carried_result: dict[str, tuple[float, float]] | None=None,
+    def _collect(
+        self, rows: list[dict], today: date,
     ) -> dict[str, tuple[float, float, str]]:
-        """
-        以 date 為主，拉指定日期的資料，如果資料不完整（有水庫的蓄水量 <= 0），就往前推一天再拉一次，最多往前推 fallback_range 天。
-        carried_result 是往前推的過程中撈到的資料，會帶入下一次 fetch 的結果裡面，避免重複撈同一天的資料
+        """把一份 API 快照（RealTime 或 Daily）整理成
+        {站名: (有效容量, 有效蓄水量, 資料日期)}。"""
+        stations = self._stations()
 
-        return: {水庫名稱: (最大蓄水量, 目前蓄水量, 日期)}
-        """
-        today = date if date else datetime.now(ZoneInfo("Asia/Taipei")).date()
-        today_str = today.strftime('%Y-%m-%d')
-
-        result = carried_result or {}
-
-        # init form data
-        if not self.form_inputs:
-            self.fetch_page()
-
-        # 拉指定日期的資料
-        payload = {
-            'ctl00$cphMain$ucDate$cboYear': str(today.year),
-            'ctl00$cphMain$ucDate$cboMonth': str(today.month),
-            'ctl00$cphMain$ucDate$cboDay': str(today.day),
-            'ctl00$cphMain$cboSearch': '所有水庫',
-
-            'ctl00$ctl02': "ctl00$cphMain$ctl00|ctl00$cphMain$btnQuery",
-            '__EVENTTARGET': "ctl00$cphMain$btnQuery",
-        }
-        document = self.fetch_page(payload)
-        trs = document('#ctl00_cphMain_gvList tr')
-
-        # 把拉到的資料中有值的水庫抓出來
-        def floater(ele: HtmlElement):
-            str_val = str(ele.text).replace('--', '').replace(',', '')
-            str_val = str_val or '-1'
-            return float(str_val)
-
-        for tr in list(trs.items())[2:]:
-            tds = tr('td')
-            if len(tds) != 11:
+        result: dict[str, tuple[float, float, str]] = {}
+        for r in rows:
+            station = stations.get(r['StationNo'])
+            if station is None:
                 continue
+            name, capacity = station
 
-            name = tds[0].text
+            time_str = r.get('Time') or ''
+            date_str = time_str[:10] or today.strftime('%Y-%m-%d')
 
-            if name not in RESERVOIRS:
-                continue
+            storage = r.get('EffectiveStorage')
+            current = float(storage) if storage and storage > 0 else -1.0
 
-            c_capacity, c_current, c_dt_str = result.get(name, (-1.0, -1.0, today_str))
+            # 即時值太舊就當作缺漏，避免把陳年資料當成現況
+            if current > 0:
+                try:
+                    if (today - date.fromisoformat(date_str)).days > self.STALE_DAYS:
+                        current = -1.0
+                except ValueError:
+                    pass
 
-            if c_capacity <= 0 or c_current <= 0:
-                # carried 資料有缺漏，嘗試更新資料
-                new_capacity = floater(tds[1])
-                new_current = floater(tds[9])
-
-                c_filled_cnt = sum(1 for val in (c_capacity, c_current) if val > 0)
-                filled_cnt = sum(1 for val in (new_capacity, new_current) if val > 0)
-                if filled_cnt > c_filled_cnt:
-                    result[name] = (new_capacity, new_current, today_str)
-
-        # 數量不夠，有的今天還沒更新，拉昨天的資料
-        resivor_missing = {name for name in result if result.get(name, (-1.0, -1.0, today_str))[1] <= 0}
-
-        if resivor_missing and fallback_range > 0:
-            yesterday = today - timedelta(days=1)
-            logger.warning(" %s 的資料數量不夠，拉 %s 的資料（缺：%s）", today, yesterday, ", ".join(resivor_missing))
-            result = self.fetch(yesterday, fallback_range - 1, carried_result=result)
-        elif resivor_missing:
-            logger.warning(" %s 的資料數量不夠，缺：%s", today, ", ".join(resivor_missing))
+            result[name] = (capacity, current, date_str)
 
         return result
 
+    def fetch_current(
+        self, today: date | None = None,
+    ) -> dict[str, tuple[float, float, str]]:
+        """抓目前各水庫的 (有效容量, 有效蓄水量, 資料日期)。"""
+        today = today or datetime.now(ZoneInfo("Asia/Taipei")).date()
+        logger.warning("開始撈取即時水情")
+        result = self._collect(self._get('Reservoir/Info/RealTime'), today)
+        logger.warning("成功撈取 %d 個水庫的即時水情", len(result))
+        return result
 
-    def fetch_uppdated_as_tsv(self, begin_date: date, end_date: date | None=None):
-        end_date = end_date or datetime.now(ZoneInfo("Asia/Taipei")).date() - timedelta(days=1)
+    def fetch(
+        self, target_date: date | None = None,
+    ) -> dict[str, tuple[float, float, str]]:
+        """相容舊介面：回 {水庫名稱: (最大蓄水量, 目前蓄水量, 日期)}。
 
-        lines = []
-        for y in range(begin_date.year, end_date.year + 1):
-            for m in range(1, 13):
-                for d in (1, 8, 15, 22):
-                    cursor_dt = date(y, m, d)
-                    if cursor_dt < begin_date:
-                        continue
-                    if cursor_dt >= end_date:
-                        break
+        新版 API 沒有任意歷史日查詢，一律回最新的即時水情。"""
+        return self.fetch_current(target_date)
 
-                    lines.extend(f"{name}\t{max}\t{curr}\t{dt_str}\n" \
-                                 for name, (max, curr, dt_str) in self.fetch(cursor_dt).items())
+    def fetch_uppdated_as_tsv(self, begin_date: date, end_date: date | None = None) -> str:
+        """補 begin_date（不含）之後到 end_date 為止、新出現的固定資料點
+        （每月 1, 8, 15, 22 日）的 TSV。
+
+        新版 API 只有「即時」與「昨日」兩種快照，所以只補得到今天與昨天的固定
+        點；更早的（server 停機跨過）只能略過。實務上 server 每小時跑，固定點
+        當天的即時值已進最新資料，隔天再用昨日日報把該固定點正式補進歷史。
+        """
+        today = datetime.now(ZoneInfo("Asia/Taipei")).date()
+        end_date = end_date or (today - timedelta(days=1))
+        yesterday = today - timedelta(days=1)
+
+        targets = [
+            date(y, m, d)
+            for y in range(begin_date.year, end_date.year + 1)
+            for m in range(1, 13)
+            for d in (1, 8, 15, 22)
+        ]
+        targets = [t for t in targets if begin_date < t <= end_date]
+        if not targets:
+            return ""
+
+        snapshots: dict[date, dict[str, tuple[float, float, str]]] = {}
+        lines: list[str] = []
+        for target in targets:
+            if target == today:
+                snap = snapshots.get(today) or self.fetch_current(today)
+                snapshots[today] = snap
+            elif target == yesterday:
+                snap = snapshots.get(yesterday)
+                if snap is None:
+                    snap = self._collect(self._get('Reservoir/Daily'), today)
+                    snapshots[yesterday] = snap
+            else:
+                logger.warning("固定資料點 %s 已過去，新版 API 無歷史查詢可補，略過", target)
+                continue
+
+            target_str = target.strftime('%Y-%m-%d')
+            lines.extend(
+                f"{name}\t{mx}\t{curr}\t{target_str}\n"
+                for name, (mx, curr, _) in snap.items()
+            )
 
         return "".join(lines)
 
