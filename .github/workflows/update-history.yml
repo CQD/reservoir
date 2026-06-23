@@ -1,0 +1,63 @@
+name: 更新水庫歷史資料
+
+# 水利署 2026 年中改版後，新 API 只查得到「即時」與「昨日」，沒有任意歷史日
+# 查詢，無法再像以前那樣隔幾週手動 `make update` 一次補回中間的固定資料點。
+# 改由本排程每天自動抓「昨天」的固定資料點（每月 1、8、15、22 日）寫進歷史
+# TSV，確保唯一能回補的窗口（昨天）不會被錯過。
+
+on:
+  schedule:
+    # 台灣時間每天 10:30（= UTC 02:30）。各水庫管理單位每日 9:30 前輸入日報，
+    # 此時昨天的資料早已齊全。
+    - cron: '30 2 * * *'
+  workflow_dispatch: {}   # 也可在 Actions 頁面手動觸發（首次測試／補跑用）
+
+permissions:
+  contents: write          # 允許用內建 GITHUB_TOKEN commit & push
+
+concurrency:
+  group: update-history
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安裝相依套件
+        run: pip install requests   # CLI（app/data.py）只用到 requests
+
+      - name: 抓昨日固定資料點，有新資料才 commit & push
+        run: |
+          set -euo pipefail
+
+          # 檔名用台灣時區年份，與 app/data.py 內部的 Asia/Taipei 一致（跨年才不會錯）
+          tsv="public/reservoir-history/$(TZ=Asia/Taipei date +%Y).tsv"
+
+          # CLI 會自當年 TSV 最後一筆日期接續，補到「昨天」為止的固定資料點。
+          # 沒有新固定點時輸出為空。
+          new="$(python app/data.py)"
+          if [ -z "$new" ]; then
+            echo "沒有新的固定資料點，今天不需要更新。"
+            exit 0
+          fi
+
+          # 確保檔尾有換行，避免 `>>` 把新資料黏在最後一行之後
+          if [ -s "$tsv" ] && [ -n "$(tail -c1 "$tsv")" ]; then
+            printf '\n' >> "$tsv"
+          fi
+          printf '%s\n' "$new" >> "$tsv"
+
+          echo "本次新增："
+          printf '%s\n' "$new"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$tsv"
+          git commit -m "自動補水庫歷史固定資料點（$(TZ=Asia/Taipei date +%Y-%m-%d)）"
+          git push
